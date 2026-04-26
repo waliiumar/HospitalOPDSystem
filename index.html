@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital OPD Triage</title>
+  <style>
+    :root {
+      --bg: #eef7fb;
+      --surface: #ffffff;
+      --surface-soft: #edf8f3;
+      --text: #142a33;
+      --muted: #5c7280;
+      --line: #d7e8ef;
+      --primary: #1d4ed8;
+      --primary-dark: #1e40af;
+      --accent: #059669;
+      --accent-soft: #e7f8ef;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --yellow: #ca8a04;
+      --yellow-soft: #fffbeb;
+      --green: #16a34a;
+      --green-soft: #f0fdf4;
+      --shadow: 0 18px 42px rgba(31, 78, 121, 0.12);
+      --shadow-soft: 0 8px 22px rgba(31, 78, 121, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(29, 78, 216, 0.13), transparent 30rem),
+        radial-gradient(circle at bottom right, rgba(5, 150, 105, 0.13), transparent 28rem),
+        linear-gradient(135deg, #fbfdff 0%, var(--bg) 48%, #edf8f3 100%);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      padding: 4px 0;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 12px 24px rgba(29, 78, 216, 0.22);
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 15px 10px;
+      border-radius: 3px;
+      background: #ffffff;
+    }
+
+    .brand-mark::after {
+      transform: rotate(90deg);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.75rem, 3vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+      color: #0f2f45;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .panel {
+      border: 1px solid rgba(215, 232, 239, 0.9);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .form-panel {
+      padding: 24px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: #12384d;
+      font-size: 1.12rem;
+      letter-spacing: 0;
+    }
+
+    .section-icon {
+      display: inline-flex;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: var(--primary);
+      background: #eef5ff;
+      box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.12);
+    }
+
+    .section-icon.green {
+      color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.14);
+    }
+
+    .section-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .form-section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #f7fbff, #f0fbf6);
+      color: #12384d;
+      font-weight: 850;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .triage-form {
+      display: grid;
+      gap: 18px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      color: #25383c;
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    input,
+    select {
+      min-height: 46px;
+      padding: 0 13px;
+    }
+
+    textarea {
+      min-height: 132px;
+      resize: vertical;
+      padding: 12px 13px;
+      line-height: 1.45;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(29, 78, 216, 0.58);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12);
+    }
+
+    .vitals-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .submit-btn {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 760;
+      box-shadow: 0 12px 22px rgba(29, 78, 216, 0.22);
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 14px 25px rgba(29, 78, 216, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:disabled {
+      cursor: wait;
+      opacity: 0.78;
+      transform: none;
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .directory {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .directory summary {
+      color: #12384d;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .directory-list {
+      display: grid;
+      gap: 0;
+      max-height: 260px;
+      margin-top: 12px;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+    }
+
+    .directory-item {
+      display: grid;
+      grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1.2fr);
+      gap: 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+    }
+
+    .directory-item strong {
+      color: var(--text);
+    }
+
+    .directory-item span {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .output-panel {
+      position: sticky;
+      top: 24px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .result-header {
+      display: flex;
+      min-height: 152px;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px;
+      color: #ffffff;
+      background:
+        linear-gradient(135deg, rgba(29, 78, 216, 0.96), rgba(5, 150, 105, 0.88)),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 14px);
+    }
+
+    .result-header h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: 0;
+    }
+
+    .result-header .section-icon {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+    }
+
+    .result-header p {
+      margin: 7px 0 0;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .pulse {
+      position: relative;
+      width: 62px;
+      height: 62px;
+      flex: 0 0 auto;
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      border-radius: 50%;
+    }
+
+    .pulse::before {
+      content: "";
+      position: absolute;
+      width: 34px;
+      height: 18px;
+      left: 12px;
+      top: 21px;
+      border-left: 3px solid #ffffff;
+      border-bottom: 3px solid #ffffff;
+      transform: skewX(-28deg);
+    }
+
+    .result-body {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      background: #f8fbfd;
+    }
+
+    .result-body.is-loading .result-card {
+      opacity: 0.42;
+    }
+
+    .status-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #ffffff;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .loading-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-color: rgba(29, 78, 216, 0.22);
+      background: linear-gradient(135deg, #f7fbff, #f0fbf6);
+    }
+
+    .loading-card[hidden] {
+      display: none;
+    }
+
+    .loader {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      border: 3px solid rgba(29, 78, 216, 0.16);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-text {
+      margin: 0;
+      color: #12384d;
+      font-weight: 850;
+    }
+
+    .loading-subtext {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+
+    .status-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .mini-icon {
+      display: inline-flex;
+      width: 20px;
+      height: 20px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: var(--primary);
+      background: #eef5ff;
+    }
+
+    .mini-icon.green {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .mini-icon svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    .priority-badge.red {
+      color: #991b1b;
+      background: var(--red-soft);
+      border: 1px solid rgba(220, 38, 38, 0.28);
+    }
+
+    .priority-badge.yellow {
+      color: #854d0e;
+      background: var(--yellow-soft);
+      border: 1px solid rgba(202, 138, 4, 0.3);
+    }
+
+    .priority-badge.green {
+      color: #166534;
+      background: var(--green-soft);
+      border: 1px solid rgba(22, 163, 74, 0.28);
+    }
+
+    .status-value {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 760;
+    }
+
+    .directions {
+      margin: 0;
+      color: #35494d;
+      line-height: 1.55;
+    }
+
+    .patient-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 20px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+    }
+
+    .patient-chip {
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 10px;
+      min-width: 0;
+      box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.08);
+    }
+
+    .patient-chip span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .patient-chip strong {
+      display: block;
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.92rem;
+    }
+
+    .chit-preview {
+      padding: 0 20px 22px;
+      background: #ffffff;
+    }
+
+    .chit {
+      border: 1px dashed #9fb3b5;
+      border-radius: 8px;
+      background:
+        linear-gradient(#ffffff, #ffffff) padding-box,
+        repeating-linear-gradient(0deg, rgba(29, 78, 216, 0.05) 0 1px, transparent 1px 28px);
+      box-shadow: var(--shadow-soft);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .chit-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px dashed #b8c8ca;
+      background: linear-gradient(135deg, #f7fbff, #f2fbf7);
+    }
+
+    .chit-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chit-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .chit-head span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .chit-body {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px 16px;
+    }
+
+    .chit-row {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      font-size: 0.93rem;
+    }
+
+    .chit-row span:first-child {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .chit-row strong,
+    .chit-row span:last-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .chit-priority {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-weight: 850;
+    }
+
+    .chit-priority.red {
+      color: #991b1b;
+      background: var(--red-soft);
+    }
+
+    .chit-priority.yellow {
+      color: #854d0e;
+      background: var(--yellow-soft);
+    }
+
+    .chit-priority.green {
+      color: #166534;
+      background: var(--green-soft);
+    }
+
+    .empty-state {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        width: min(100% - 24px, 680px);
+        padding: 24px 0;
+      }
+
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .output-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .brand {
+        align-items: flex-start;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+      }
+
+      .brand-mark::before,
+      .brand-mark::after {
+        inset: 13px 9px;
+      }
+
+      .form-panel {
+        padding: 18px;
+      }
+
+      .field-grid,
+      .vitals-row,
+      .directory-item,
+      .chit-row,
+      .patient-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .result-header {
+        min-height: 132px;
+      }
+
+      .pulse {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="brand" aria-label="Hospital OPD Triage">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div>
+        <h1>Hospital OPD Triage</h1>
+        <p>Front-desk priority assessment for walk-in patients</p>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <section class="panel form-panel" aria-labelledby="form-title">
+        <h2 class="section-title" id="form-title">
+          <span class="section-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9.5" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M19 8v6m3-3h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Patient Intake</span>
+        </h2>
+        <form class="triage-form" id="triageForm">
+          <div class="field-grid">
+            <div class="field">
+              <label for="patientName">Patient Name</label>
+              <input id="patientName" name="patientName" type="text" autocomplete="name" required>
+            </div>
+
+            <div class="field">
+              <label for="age">Age (years)</label>
+              <input id="age" name="age" type="number" min="0" max="120" step="0.01" required>
+            </div>
+
+            <div class="field">
+              <label for="gender">Gender</label>
+              <select id="gender" name="gender" required>
+                <option value="">Select gender</option>
+                <option>Female</option>
+                <option>Male</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="form-section-heading">
+              <span class="section-icon green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3l1.7 4.6L18 9.2l-4.3 1.6L12 15.5l-1.7-4.7L6 9.2l4.3-1.6L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span>AI Rule-Based Triage</span>
+            </div>
+
+            <div class="field field-full">
+              <label for="whoCriterion">WHO Triage Criterion</label>
+              <select id="whoCriterion" name="whoCriterion">
+                <option value="">Select if a WHO red/yellow criterion is present</option>
+              </select>
+            </div>
+
+            <div class="field field-full">
+              <label for="symptoms">Symptoms</label>
+              <textarea id="symptoms" name="symptoms"></textarea>
+            </div>
+
+            <div class="field field-full">
+              <div class="vitals-row">
+                <div class="field">
+                  <label for="temperature">Temperature (&deg;C)</label>
+                  <input id="temperature" name="temperature" type="number" min="30" max="45" step="0.1" placeholder="Optional">
+                </div>
+                <div class="field">
+                  <label for="heartRate">Heart Rate</label>
+                  <input id="heartRate" name="heartRate" type="number" min="20" max="240" placeholder="Optional">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" type="submit">
+            <svg class="submit-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+              <path d="M4 12h16m0 0-6-6m6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span id="submitText">Submit Triage</span>
+          </button>
+        </form>
+
+        <details class="directory">
+          <summary>Hospital Department Directory</summary>
+          <div class="directory-list" id="departmentDirectory" aria-label="Hospital department locations"></div>
+        </details>
+      </section>
+
+      <aside class="panel output-panel" aria-labelledby="result-title">
+        <div class="result-header">
+          <div>
+            <h2 id="result-title">
+              <span class="section-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M17 16l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span>Triage Result</span>
+            </h2>
+            <p id="resultSubtitle">Awaiting patient details</p>
+          </div>
+          <div class="pulse" aria-hidden="true"></div>
+        </div>
+
+        <div class="result-body" id="resultBody">
+          <div class="status-card loading-card" id="loadingState" hidden>
+            <span class="loader" aria-hidden="true"></span>
+            <div>
+              <p class="loading-text">Analyzing symptoms...</p>
+              <p class="loading-subtext">Applying WHO triage rules and department routing.</p>
+            </div>
+          </div>
+
+          <div class="status-card result-card">
+            <p class="status-label">
+              <span class="mini-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 17h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M10.3 4.2L2.7 17.4A2 2 0 0 0 4.4 20h15.2a2 2 0 0 0 1.7-2.6L13.7 4.2a2 2 0 0 0-3.4 0z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Priority Level
+            </p>
+            <span class="priority-badge green" id="priorityBadge">Not Assigned</span>
+          </div>
+          <div class="status-card result-card">
+            <p class="status-label">
+              <span class="mini-icon green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 21V7l8-4 8 4v14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M9 21v-7h6v7M9 9h6M12 6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+              Suggested Department
+            </p>
+            <p class="status-value" id="departmentValue">-</p>
+          </div>
+          <div class="status-card result-card">
+            <p class="status-label">
+              <span class="mini-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Matched WHO Rule
+            </p>
+            <p class="status-value" id="ruleValue">-</p>
+          </div>
+          <div class="status-card result-card">
+            <p class="status-label">
+              <span class="mini-icon green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </span>
+              Directions
+            </p>
+            <p class="directions" id="directionsValue">Directions will appear after triage.</p>
+          </div>
+        </div>
+
+        <div class="patient-strip" aria-label="Patient summary">
+          <div class="patient-chip">
+            <span>Name</span>
+            <strong id="summaryName">-</strong>
+          </div>
+          <div class="patient-chip">
+            <span>Age</span>
+            <strong id="summaryAge">-</strong>
+          </div>
+          <div class="patient-chip">
+            <span>Gender</span>
+            <strong id="summaryGender">-</strong>
+          </div>
+        </div>
+
+        <section class="chit-preview" aria-labelledby="chit-title">
+          <div class="chit">
+            <div class="chit-head">
+              <div class="chit-title-wrap">
+                <span class="section-icon green" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                <h3 id="chit-title">Printed Chit Preview</h3>
+                <span>Hospital OPD Slip</span>
+                </div>
+              </div>
+              <span id="chitToken">Token Number: -</span>
+            </div>
+            <div class="chit-body">
+              <div class="chit-row">
+                <span>Patient</span>
+                <strong id="chitName">-</strong>
+              </div>
+              <div class="chit-row">
+                <span>Priority</span>
+                <strong class="chit-priority green" id="chitPriority">Not Assigned</strong>
+              </div>
+              <div class="chit-row">
+                <span>Department</span>
+                <strong id="chitDepartment">-</strong>
+              </div>
+              <div class="chit-row">
+                <span>Directions</span>
+                <span id="chitDirections">-</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("triageForm");
+    const submitButton = form.querySelector(".submit-btn");
+    const submitText = document.getElementById("submitText");
+    const whoCriterion = document.getElementById("whoCriterion");
+    const departmentDirectory = document.getElementById("departmentDirectory");
+    const loadingState = document.getElementById("loadingState");
+    const resultBody = document.getElementById("resultBody");
+    const priorityBadge = document.getElementById("priorityBadge");
+    const departmentValue = document.getElementById("departmentValue");
+    const ruleValue = document.getElementById("ruleValue");
+    const directionsValue = document.getElementById("directionsValue");
+    const resultSubtitle = document.getElementById("resultSubtitle");
+    const summaryName = document.getElementById("summaryName");
+    const summaryAge = document.getElementById("summaryAge");
+    const summaryGender = document.getElementById("summaryGender");
+    const chitToken = document.getElementById("chitToken");
+    const chitName = document.getElementById("chitName");
+    const chitPriority = document.getElementById("chitPriority");
+    const chitDepartment = document.getElementById("chitDepartment");
+    const chitDirections = document.getElementById("chitDirections");
+    let analysisTimer;
+
+    const priorities = {
+      Red: {
+        label: "Red - Emergency",
+        className: "red",
+        rank: 3
+      },
+      Yellow: {
+        label: "Yellow - Urgent",
+        className: "yellow",
+        rank: 2
+      },
+      Green: {
+        label: "Green - Routine",
+        className: "green",
+        rank: 1
+      }
+    };
+
+    // Rule labels and triggers are derived from the provided WHO IITT adult and pediatric cards.
+    const whoRules = [
+      {
+        id: "red_unresponsive",
+        priority: "Red",
+        population: "all",
+        label: "Unresponsive",
+        keywords: ["unresponsive", "unconscious", "not responding", "no response"]
+      },
+      {
+        id: "red_stridor",
+        priority: "Red",
+        population: "all",
+        label: "Stridor",
+        keywords: ["stridor"]
+      },
+      {
+        id: "red_respiratory_distress",
+        priority: "Red",
+        population: "all",
+        label: "Respiratory distress or central cyanosis",
+        keywords: ["respiratory distress", "central cyanosis", "cyanosis", "blue lips", "severe breathing", "unable to talk", "unable to walk", "nasal flaring", "grunting", "chest indrawing"]
+      },
+      {
+        id: "red_capillary_refill",
+        priority: "Red",
+        population: "all",
+        label: "Capillary refill greater than 3 seconds",
+        keywords: ["capillary refill", "cap refill", "crt >3", "crt greater than 3"]
+      },
+      {
+        id: "red_weak_fast_pulse",
+        priority: "Red",
+        population: "all",
+        label: "Weak and fast pulse",
+        keywords: ["weak and fast pulse", "weak fast pulse", "thready pulse"]
+      },
+      {
+        id: "red_heavy_bleeding",
+        priority: "Red",
+        population: "all",
+        label: "Heavy bleeding",
+        keywords: ["heavy bleeding", "severe bleeding", "uncontrolled bleeding", "massive bleeding"]
+      },
+      {
+        id: "red_high_risk_trauma",
+        priority: "Red",
+        population: "all",
+        label: "High-risk trauma",
+        keywords: ["high risk trauma", "polytrauma", "crush injury", "high speed crash", "pedestrian hit", "cyclist hit", "thrown from vehicle", "trapped in vehicle", "penetrating trauma", "fall from height"]
+      },
+      {
+        id: "red_poisoning_exposure",
+        priority: "Red",
+        population: "all",
+        label: "Poisoning, ingestion or dangerous chemical exposure",
+        keywords: ["poisoning", "poison", "ingestion", "overdose", "chemical exposure", "dangerous exposure"]
+      },
+      {
+        id: "red_threatened_limb",
+        priority: "Red",
+        population: "all",
+        label: "Threatened limb",
+        keywords: ["threatened limb", "pulseless limb", "pale limb", "numb limb", "massive swelling", "weak limb pulse"]
+      },
+      {
+        id: "red_snake_bite",
+        priority: "Red",
+        population: "all",
+        label: "Snake bite",
+        keywords: ["snake bite", "snakebite"]
+      },
+      {
+        id: "red_active_convulsions",
+        priority: "Red",
+        population: "all",
+        label: "Active convulsions",
+        keywords: ["active convulsions", "convulsing", "seizure now", "active seizure"]
+      },
+      {
+        id: "red_hypoglycaemia",
+        priority: "Red",
+        population: "all",
+        label: "Hypoglycaemia",
+        keywords: ["hypoglycaemia", "hypoglycemia", "low blood sugar"]
+      },
+      {
+        id: "red_adult_chest_abdominal_pain",
+        priority: "Red",
+        population: "adult",
+        label: "Acute chest or abdominal pain in age over 50",
+        ageCheck: (age) => age > 50,
+        keywords: ["acute chest pain", "chest pain", "acute abdominal pain", "abdominal pain"]
+      },
+      {
+        id: "red_adult_pregnancy",
+        priority: "Red",
+        population: "adult",
+        label: "Pregnancy with adult red criteria",
+        keywords: ["pregnant heavy bleeding", "pregnant severe abdominal pain", "pregnant seizure", "pregnant altered mental status", "pregnant severe headache", "pregnant visual changes", "pregnant active labour", "pregnant trauma", "pregnancy heavy bleeding", "pregnancy severe abdominal pain"]
+      },
+      {
+        id: "red_adult_violent",
+        priority: "Red",
+        population: "adult",
+        label: "Violent or aggressive",
+        keywords: ["violent", "aggressive", "danger to staff"]
+      },
+      {
+        id: "red_pediatric_cold_extremities",
+        priority: "Red",
+        population: "pediatric",
+        label: "Cold extremities",
+        keywords: ["cold extremities", "cold hands", "cold feet"]
+      },
+      {
+        id: "red_pediatric_dehydration_cluster",
+        priority: "Red",
+        population: "pediatric",
+        label: "Two or more severe dehydration signs",
+        keywords: ["sunken eyes very slow skin pinch", "sunken eyes drinks poorly", "lethargy sunken eyes", "lethargy drinks poorly"]
+      },
+      {
+        id: "red_pediatric_newborn",
+        priority: "Red",
+        population: "pediatric",
+        label: "Any infant under 8 days old",
+        ageCheck: (age) => age < 8 / 365,
+        keywords: ["infant under 8 days", "newborn under 8 days", "7 days old", "newborn"]
+      },
+      {
+        id: "red_pediatric_infant_temp",
+        priority: "Red",
+        population: "pediatric",
+        label: "Age under 2 months with temperature under 36 or over 39",
+        ageCheck: (age) => age < 2 / 12,
+        keywords: ["under 2 months fever", "under 2 months hypothermia", "infant fever", "infant hypothermia"]
+      },
+      {
+        id: "red_pediatric_testicular",
+        priority: "Red",
+        population: "pediatric",
+        label: "Acute testicular/scrotal pain or priapism",
+        keywords: ["acute testicular pain", "scrotal pain", "priapism"]
+      },
+      {
+        id: "yellow_airway_swelling",
+        priority: "Yellow",
+        population: "all",
+        label: "Swelling or mass of mouth, throat or neck",
+        keywords: ["mouth swelling", "throat swelling", "neck swelling", "mass in mouth", "mass in throat", "mass in neck"]
+      },
+      {
+        id: "yellow_wheezing",
+        priority: "Yellow",
+        population: "all",
+        label: "Wheezing with no red criteria",
+        keywords: ["wheezing", "asthma"]
+      },
+      {
+        id: "yellow_vomiting_diarrhoea",
+        priority: "Yellow",
+        population: "all",
+        label: "Vomits everything or ongoing diarrhoea",
+        keywords: ["vomits everything", "vomiting everything", "ongoing diarrhoea", "ongoing diarrhea", "persistent diarrhoea", "persistent diarrhea"]
+      },
+      {
+        id: "yellow_unable_feed_drink",
+        priority: "Yellow",
+        population: "all",
+        label: "Unable to feed or drink",
+        keywords: ["unable to feed", "unable to drink", "not drinking", "cannot drink", "cannot feed"]
+      },
+      {
+        id: "yellow_severe_pallor",
+        priority: "Yellow",
+        population: "all",
+        label: "Severe pallor with no red criteria",
+        keywords: ["severe pallor", "very pale"]
+      },
+      {
+        id: "yellow_new_rash",
+        priority: "Yellow",
+        population: "all",
+        label: "New rash worsening over hours or peeling",
+        keywords: ["new rash", "worsening rash", "peeling rash", "skin peeling"]
+      },
+      {
+        id: "yellow_trauma_deformity",
+        priority: "Yellow",
+        population: "all",
+        label: "Acute limb deformity, open fracture or suspected dislocation",
+        keywords: ["limb deformity", "open fracture", "suspected dislocation", "dislocation"]
+      },
+      {
+        id: "yellow_other_trauma_burn",
+        priority: "Yellow",
+        population: "all",
+        label: "Other trauma or burns with no red criteria",
+        keywords: ["minor trauma", "trauma", "burn", "burns", "injury"]
+      },
+      {
+        id: "yellow_urgent_surgery",
+        priority: "Yellow",
+        population: "all",
+        label: "Known diagnosis requiring urgent surgical intervention",
+        keywords: ["urgent surgical", "urgent surgery", "surgical intervention"]
+      },
+      {
+        id: "yellow_sexual_assault",
+        priority: "Yellow",
+        population: "all",
+        label: "Sexual assault",
+        keywords: ["sexual assault", "rape"]
+      },
+      {
+        id: "yellow_exposure_prophylaxis",
+        priority: "Yellow",
+        population: "all",
+        label: "Exposure requiring time-sensitive prophylaxis",
+        keywords: ["animal bite", "needlestick", "needle stick", "time sensitive prophylaxis", "rabies exposure"]
+      },
+      {
+        id: "yellow_severe_pain",
+        priority: "Yellow",
+        population: "all",
+        label: "Severe pain with no red criteria",
+        keywords: ["severe pain", "worst pain", "unbearable pain"]
+      },
+      {
+        id: "yellow_adult_ongoing_bleeding",
+        priority: "Yellow",
+        population: "adult",
+        label: "Ongoing bleeding with no red criteria",
+        keywords: ["ongoing bleeding", "continued bleeding", "bleeding"]
+      },
+      {
+        id: "yellow_adult_recent_fainting",
+        priority: "Yellow",
+        population: "adult",
+        label: "Recent fainting",
+        keywords: ["recent fainting", "fainted", "syncope"]
+      },
+      {
+        id: "yellow_adult_testicular",
+        priority: "Yellow",
+        population: "adult",
+        label: "Acute testicular/scrotal pain or priapism",
+        keywords: ["acute testicular pain", "scrotal pain", "priapism"]
+      },
+      {
+        id: "yellow_adult_urine",
+        priority: "Yellow",
+        population: "adult",
+        label: "Unable to pass urine",
+        keywords: ["unable to pass urine", "urinary retention", "cannot urinate"]
+      },
+      {
+        id: "yellow_adult_pregnancy",
+        priority: "Yellow",
+        population: "adult",
+        label: "Pregnancy referred for complications",
+        keywords: ["pregnancy complication", "pregnant complication", "pregnant referred", "pregnancy referred"]
+      },
+      {
+        id: "yellow_adult_neuro",
+        priority: "Yellow",
+        population: "adult",
+        label: "Altered mental status, acute weakness, focal neurologic complaint or visual disturbance",
+        keywords: ["altered mental status", "agitation", "acute weakness", "focal neurologic", "neurologic complaint", "visual disturbance", "vision loss"]
+      },
+      {
+        id: "yellow_pediatric_dehydration",
+        priority: "Yellow",
+        population: "pediatric",
+        label: "Dehydration",
+        keywords: ["dehydration", "dehydrated"]
+      },
+      {
+        id: "yellow_pediatric_infant",
+        priority: "Yellow",
+        population: "pediatric",
+        label: "Infant 8 days to 6 months old",
+        ageCheck: (age) => age >= 8 / 365 && age <= 0.5,
+        keywords: ["infant", "baby", "8 days", "6 months"]
+      },
+      {
+        id: "yellow_pediatric_malnutrition",
+        priority: "Yellow",
+        population: "pediatric",
+        label: "Malnutrition with severe wasting or oedema of both feet",
+        keywords: ["severe wasting", "malnutrition", "oedema of both feet", "edema of both feet"]
+      },
+      {
+        id: "yellow_pediatric_headache",
+        priority: "Yellow",
+        population: "pediatric",
+        label: "Headache with no red criteria",
+        keywords: ["headache"]
+      },
+      {
+        id: "yellow_pediatric_irritable_lethargy",
+        priority: "Yellow",
+        population: "pediatric",
+        label: "Restless, continuously irritable or lethargy",
+        keywords: ["restless", "continuously irritable", "irritable", "lethargy", "lethargic"]
+      }
+    ];
+
+    const departmentRoutes = [
+      {
+        name: "Cardiology / Emergency",
+        emergencyName: "Emergency / Cardiology",
+        keywords: ["chest pain", "acute chest pain", "ecg", "ischaemia", "ischemia", "palpitation", "heart", "cardiac", "blood pressure", "hypertension"],
+        directions: "Block B -> 1st Floor -> Room 12",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Cardiology team in Block B -> 1st Floor -> Room 12"
+      },
+      {
+        name: "Gynecology",
+        emergencyName: "Emergency / Gynecology",
+        keywords: ["pregnant", "pregnancy", "active labour", "active labor", "vaginal bleeding", "pelvic pain", "menstrual", "antenatal", "postnatal", "severe abdominal pain in pregnancy"],
+        directions: "Block C -> 2nd Floor -> Room 21",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Gynecology team in Block C -> 2nd Floor -> Room 21"
+      },
+      {
+        name: "Emergency Department",
+        keywords: ["injury", "trauma", "high-risk trauma", "burn", "burns", "bleeding", "snake bite", "poisoning", "ingestion", "chemical exposure", "threatened limb", "unresponsive", "active convulsions", "shock", "collapse", "accident"],
+        directions: "Ground Floor -> Emergency Wing"
+      },
+      {
+        name: "Gastroenterology",
+        keywords: ["abdominal pain", "acute abdominal pain", "abdominal", "stomach", "gastric", "vomiting", "diarrhea", "diarrhoea", "nausea", "constipation", "jaundice", "liver", "hepatitis", "acid reflux"],
+        directions: "Block B -> Ground Floor -> Room 8"
+      },
+      {
+        name: "Neurology",
+        emergencyName: "Emergency / Neurology",
+        keywords: ["headache", "migraine", "seizure", "stroke", "numbness", "weakness on one side", "focal neurologic", "altered mental status", "confusion", "dizziness"],
+        directions: "Block D -> 2nd Floor -> Room 18",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Neurology team in Block D -> 2nd Floor -> Room 18"
+      },
+      {
+        name: "Pulmonology",
+        emergencyName: "Emergency / Pulmonology",
+        keywords: ["cough", "asthma", "breathing", "wheezing", "shortness of breath", "respiratory distress", "stridor", "cyanosis"],
+        directions: "Block B -> 1st Floor -> Room 14",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Pulmonology team in Block B -> 1st Floor -> Room 14"
+      },
+      {
+        name: "Orthopedics",
+        keywords: ["fracture", "dislocation", "sprain", "bone", "joint", "back pain", "limb pain", "knee pain", "shoulder pain"],
+        directions: "Block D -> Ground Floor -> Room 7"
+      },
+      {
+        name: "General Surgery",
+        keywords: ["appendicitis", "hernia", "abscess", "surgical", "surgery", "wound", "lump", "swelling", "gallbladder"],
+        directions: "Block D -> 1st Floor -> Room 11"
+      },
+      {
+        name: "Neonatology",
+        emergencyName: "Emergency / Neonatology",
+        keywords: ["newborn", "neonate", "premature", "low birth weight", "less than 8 days"],
+        directions: "Block A -> 1st Floor -> Room 10",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Neonatology team in Block A -> 1st Floor -> Room 10"
+      },
+      {
+        name: "Pediatrics",
+        keywords: ["child", "infant", "baby", "pediatric"],
+        directions: "Block A -> 1st Floor -> Room 9"
+      },
+      {
+        name: "ENT",
+        keywords: ["ear pain", "ear discharge", "hearing", "nose bleed", "nosebleed", "sore throat", "tonsil", "sinus", "throat pain"],
+        directions: "Block C -> Ground Floor -> Room 6"
+      },
+      {
+        name: "Ophthalmology",
+        keywords: ["eye pain", "eye injury", "red eye", "vision", "visual disturbance", "blurred vision", "loss of vision", "foreign body in eye"],
+        directions: "Block C -> Ground Floor -> Room 4"
+      },
+      {
+        name: "Dermatology",
+        keywords: ["rash", "skin", "itching", "eczema", "allergy", "hives", "peeling", "acne"],
+        directions: "Block C -> 1st Floor -> Room 13"
+      },
+      {
+        name: "Psychiatry",
+        emergencyName: "Emergency / Psychiatry",
+        keywords: ["anxiety", "depression", "suicidal", "self harm", "panic", "psychosis", "hallucination", "violent", "aggressive"],
+        directions: "Block E -> 1st Floor -> Room 19",
+        emergencyDirections: "Ground Floor -> Emergency Wing; Psychiatry team in Block E -> 1st Floor -> Room 19"
+      },
+      {
+        name: "Dental",
+        keywords: ["tooth", "toothache", "dental", "gum", "jaw pain", "mouth ulcer"],
+        directions: "Block E -> Ground Floor -> Room 3"
+      },
+      {
+        name: "Urology",
+        keywords: ["testicular", "scrotal", "priapism", "urine", "urinary", "kidney stone", "flank pain", "blood in urine"],
+        directions: "Block C -> 1st Floor -> Room 16"
+      },
+      {
+        name: "Nephrology",
+        keywords: ["kidney failure", "renal failure", "dialysis", "swollen feet", "reduced urine", "protein in urine"],
+        directions: "Block B -> 2nd Floor -> Room 24"
+      },
+      {
+        name: "Endocrinology",
+        keywords: ["diabetes", "thyroid", "high sugar", "low sugar", "hypoglycaemia", "hypoglycemia", "hormone"],
+        directions: "Block B -> 2nd Floor -> Room 23"
+      },
+      {
+        name: "Oncology",
+        keywords: ["cancer", "tumor", "tumour", "chemotherapy", "radiotherapy", "unexplained weight loss"],
+        directions: "Block F -> 1st Floor -> Room 25"
+      },
+      {
+        name: "Hematology",
+        keywords: ["anaemia", "anemia", "blood disorder", "bleeding disorder", "sickle cell", "low platelets"],
+        directions: "Block F -> Ground Floor -> Room 20"
+      },
+      {
+        name: "Infectious Diseases",
+        keywords: ["tb", "tuberculosis", "hiv", "malaria", "dengue", "exposure", "needlestick", "animal bite", "rabies"],
+        directions: "Block A -> 2nd Floor -> Room 22"
+      },
+      {
+        name: "Rheumatology",
+        keywords: ["arthritis", "joint swelling", "autoimmune", "lupus", "rheumatoid"],
+        directions: "Block B -> 2nd Floor -> Room 26"
+      },
+      {
+        name: "Physiotherapy and Rehabilitation",
+        keywords: ["physiotherapy", "rehabilitation", "rehab", "mobility", "post stroke", "exercise therapy"],
+        directions: "Block G -> Ground Floor -> Rehab Hall"
+      },
+      {
+        name: "Radiology and Imaging",
+        keywords: ["xray", "x ray", "ultrasound", "ct scan", "mri", "imaging"],
+        directions: "Block H -> Ground Floor -> Imaging Desk"
+      },
+      {
+        name: "Pathology Laboratory",
+        keywords: ["blood test", "lab test", "urine test", "sample", "cbc", "culture"],
+        directions: "Block H -> Ground Floor -> Sample Collection"
+      },
+      {
+        name: "Pharmacy",
+        keywords: ["medicine refill", "prescription", "pharmacy", "medication"],
+        directions: "Block A -> Ground Floor -> Pharmacy Counter"
+      },
+      {
+        name: "Nutrition and Dietetics",
+        keywords: ["diet", "nutrition", "weight management", "malnutrition", "feeding advice"],
+        directions: "Block E -> 2nd Floor -> Room 27"
+      },
+      {
+        name: "Pain Clinic",
+        keywords: ["chronic pain", "pain clinic", "nerve block", "palliative pain"],
+        directions: "Block E -> 2nd Floor -> Room 28"
+      },
+      {
+        name: "General Medicine",
+        keywords: ["fever", "high fever", "hypothermia", "general weakness", "acute weakness", "dehydration", "infection", "fatigue", "body ache"],
+        directions: "Block A -> Ground Floor -> Room 5"
+      }
+    ];
+
+    function populateCriterionDropdown() {
+      ["Red", "Yellow"].forEach((priority) => {
+        const group = document.createElement("optgroup");
+        group.label = `WHO ${priority} criteria`;
+        whoRules
+          .filter((rule) => rule.priority === priority)
+          .forEach((rule) => {
+            const option = document.createElement("option");
+            const prefix = rule.population === "all" ? "" : `${capitalize(rule.population)}: `;
+            option.value = rule.id;
+            option.textContent = `${prefix}${rule.label}`;
+            group.appendChild(option);
+          });
+        whoCriterion.appendChild(group);
+      });
+    }
+
+    function populateDepartmentDirectory() {
+      const listed = new Set();
+      departmentRoutes.forEach((route) => {
+        if (listed.has(route.name)) {
+          return;
+        }
+
+        listed.add(route.name);
+        const item = document.createElement("div");
+        const name = document.createElement("strong");
+        const location = document.createElement("span");
+
+        item.className = "directory-item";
+        name.textContent = route.name;
+        location.textContent = route.directions;
+
+        item.appendChild(name);
+        item.appendChild(location);
+        departmentDirectory.appendChild(item);
+      });
+    }
+
+    function capitalize(value) {
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function normalizeText(value) {
+      return value
+        .toLowerCase()
+        .replace(/[^a-z0-9<>. ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function hasAnyKeyword(text, keywords) {
+      return keywords.some((keyword) => text.includes(keyword));
+    }
+
+    function getPopulation(age) {
+      return age < 12 ? "pediatric" : "adult";
+    }
+
+    function appliesToPopulation(rule, population) {
+      return rule.population === "all" || rule.population === population;
+    }
+
+    function appliesToRule(rule, population, age) {
+      return appliesToPopulation(rule, population) && (!rule.ageCheck || rule.ageCheck(age));
+    }
+
+    function makeFinding(priority, label, source) {
+      return {
+        priority,
+        label,
+        source
+      };
+    }
+
+    function findCombinationRule(symptoms, population) {
+      const mentalStatus = ["altered mental status", "confused", "confusion", "restless", "lethargic", "lethargy", "agitated"];
+      const adultDisabilitySigns = [
+        hasAnyKeyword(symptoms, mentalStatus),
+        hasAnyKeyword(symptoms, ["stiff neck", "neck stiffness"]),
+        hasAnyKeyword(symptoms, ["hypothermia", "fever"]),
+        symptoms.includes("headache")
+      ];
+
+      if (population === "adult" && adultDisabilitySigns.filter(Boolean).length >= 2) {
+        return makeFinding("Red", "Any two adult disability red signs", "Symptoms text");
+      }
+
+      if (population === "pediatric" && hasAnyKeyword(symptoms, mentalStatus) && hasAnyKeyword(symptoms, ["stiff neck", "neck stiffness", "hypothermia", "fever"])) {
+        return makeFinding("Red", "Pediatric altered mental status with stiff neck, hypothermia or fever", "Symptoms text");
+      }
+
+      if (population === "pediatric") {
+        const severeDehydrationSigns = ["lethargy", "lethargic", "sunken eyes", "very slow skin pinch", "drinks poorly", "poor drinking"];
+        const matchedSigns = severeDehydrationSigns.filter((sign) => symptoms.includes(sign));
+        if (matchedSigns.length >= 2) {
+          return makeFinding("Red", "Two or more pediatric severe dehydration signs", "Symptoms text");
+        }
+      }
+
+      return null;
+    }
+
+    function findTextRule(symptoms, population, age) {
+      if (!symptoms) {
+        return null;
+      }
+
+      const directMatch = ["Red", "Yellow"]
+        .flatMap((priority) => whoRules.filter((rule) => rule.priority === priority))
+        .find((rule) => appliesToRule(rule, population, age) && hasAnyKeyword(symptoms, rule.keywords));
+
+      if (!directMatch) {
+        return null;
+      }
+
+      return makeFinding(directMatch.priority, directMatch.label, "Symptoms text");
+    }
+
+    function assessVitalSigns(age, temperature, heartRate) {
+      const population = getPopulation(age);
+
+      if (population === "adult") {
+        if (Number.isFinite(heartRate) && (heartRate < 50 || heartRate > 150)) {
+          return makeFinding("Red", "Adult red criterion: heart rate under 50 or over 150", "Vitals");
+        }
+
+        if (Number.isFinite(temperature) && (temperature < 36 || temperature > 39)) {
+          return makeFinding("Yellow", "Adult high-risk vital sign: temperature under 36 or over 39", "Vitals");
+        }
+
+        if (Number.isFinite(heartRate) && (heartRate < 60 || heartRate > 130)) {
+          return makeFinding("Yellow", "Adult high-risk vital sign: heart rate under 60 or over 130", "Vitals");
+        }
+
+        return null;
+      }
+
+      if (age < 2 / 12 && Number.isFinite(temperature) && (temperature < 36 || temperature > 39)) {
+        return makeFinding("Red", "Pediatric red criterion: age under 2 months with temperature under 36 or over 39", "Vitals");
+      }
+
+      if (Number.isFinite(temperature) && (temperature < 36 || temperature > 39)) {
+        return makeFinding("Yellow", "Pediatric high-risk vital sign: temperature under 36 or over 39", "Vitals");
+      }
+
+      if (Number.isFinite(heartRate)) {
+        let highHeartRate = 140;
+        let lowHeartRate = 70;
+
+        if (age < 1) {
+          highHeartRate = 180;
+          lowHeartRate = 90;
+        } else if (age < 5) {
+          highHeartRate = 160;
+          lowHeartRate = 80;
+        }
+
+        if (heartRate > highHeartRate || heartRate < lowHeartRate) {
+          return makeFinding("Yellow", `Pediatric high-risk vital sign: heart rate outside ${lowHeartRate}-${highHeartRate}`, "Vitals");
+        }
+      }
+
+      return null;
+    }
+
+    function chooseMostUrgent(findings) {
+      return findings
+        .filter(Boolean)
+        .sort((first, second) => priorities[second.priority].rank - priorities[first.priority].rank)[0] || null;
+    }
+
+    function assessPriority(symptoms, selectedCriterionId, age, temperature, heartRate) {
+      const population = getPopulation(age);
+      const findings = [];
+      const selectedRule = whoRules.find((rule) => rule.id === selectedCriterionId);
+      let ageMismatch = "";
+
+      if (selectedRule && appliesToRule(selectedRule, population, age)) {
+        findings.push(makeFinding(selectedRule.priority, selectedRule.label, "WHO dropdown"));
+      } else if (selectedRule) {
+        ageMismatch = "Selected WHO criterion not applied for this age/profile";
+      }
+
+      findings.push(findCombinationRule(symptoms, population));
+      findings.push(findTextRule(symptoms, population, age));
+      findings.push(assessVitalSigns(age, temperature, heartRate));
+
+      const finding = chooseMostUrgent(findings);
+      if (finding) {
+        return {
+          level: finding.priority,
+          label: priorities[finding.priority].label,
+          className: priorities[finding.priority].className,
+          rule: `${finding.source}: ${finding.label}`,
+          population
+        };
+      }
+
+      return {
+        level: "Green",
+        label: priorities.Green.label,
+        className: priorities.Green.className,
+        rule: ageMismatch || "No WHO red/yellow criterion matched",
+        population
+      };
+    }
+
+    function routeForPriority(route, priorityLevel) {
+      if (priorityLevel === "Red" && route.emergencyName) {
+        return {
+          name: route.emergencyName,
+          directions: route.emergencyDirections
+        };
+      }
+
+      return {
+        name: route.name,
+        directions: route.directions
+      };
+    }
+
+    function suggestDepartment(contextText, age, priorityLevel) {
+      const route = departmentRoutes.find((department) => hasAnyKeyword(contextText, department.keywords));
+
+      if (route) {
+        return routeForPriority(route, priorityLevel);
+      }
+
+      if (age < 12) {
+        return {
+          name: "Pediatrics",
+          directions: "Block A -> 1st Floor -> Room 9"
+        };
+      }
+
+      if (priorityLevel === "Red") {
+        return {
+          name: "Emergency Department",
+          directions: "Ground Floor -> Emergency Wing"
+        };
+      }
+
+      return {
+        name: "General Medicine",
+        directions: "Block A -> Ground Floor -> Room 5"
+      };
+    }
+
+    function buildDirections(department) {
+      return department.directions;
+    }
+
+    function generateTokenNumber() {
+      return `OPD-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    function setLoading(isLoading) {
+      loadingState.hidden = !isLoading;
+      resultBody.classList.toggle("is-loading", isLoading);
+      submitButton.disabled = isLoading;
+      submitText.textContent = isLoading ? "Analyzing..." : "Submit Triage";
+
+      if (isLoading) {
+        resultSubtitle.textContent = "Analyzing symptoms...";
+      }
+    }
+
+    function parseOptionalNumber(value) {
+      if (value.trim() === "") {
+        return Number.NaN;
+      }
+
+      return Number(value);
+    }
+
+    populateCriterionDropdown();
+    populateDepartmentDirectory();
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      clearTimeout(analysisTimer);
+
+      const formData = new FormData(form);
+      const patientName = String(formData.get("patientName")).trim();
+      const age = Number(formData.get("age"));
+      const gender = String(formData.get("gender"));
+      const selectedCriterionId = String(formData.get("whoCriterion"));
+      const symptoms = normalizeText(String(formData.get("symptoms")));
+      const temperature = parseOptionalNumber(String(formData.get("temperature")));
+      const heartRate = parseOptionalNumber(String(formData.get("heartRate")));
+
+      setLoading(true);
+
+      analysisTimer = setTimeout(() => {
+        const priority = assessPriority(symptoms, selectedCriterionId, age, temperature, heartRate);
+        const selectedRule = whoRules.find((rule) => rule.id === selectedCriterionId);
+        const selectedRuleText = selectedRule ? normalizeText(selectedRule.label) : "";
+        const department = suggestDepartment(`${symptoms} ${selectedRuleText}`, age, priority.level);
+        const directions = buildDirections(department);
+        const tokenNumber = generateTokenNumber();
+
+        priorityBadge.textContent = priority.label;
+        priorityBadge.className = `priority-badge ${priority.className}`;
+        departmentValue.textContent = department.name;
+        ruleValue.textContent = priority.rule;
+        directionsValue.textContent = directions;
+        resultSubtitle.textContent = `${capitalize(priority.population)} IITT classification for ${patientName}`;
+        summaryName.textContent = patientName;
+        summaryAge.textContent = age;
+        summaryGender.textContent = gender;
+        chitToken.textContent = `Token Number: ${tokenNumber}`;
+        chitName.textContent = patientName;
+        chitPriority.textContent = priority.label;
+        chitPriority.className = `chit-priority ${priority.className}`;
+        chitDepartment.textContent = department.name;
+        chitDirections.textContent = directions;
+        setLoading(false);
+      }, 1300);
+    });
+  </script>
+</body>
+</html>

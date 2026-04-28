@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD Triage System</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --red:#B91C1C;--red-mid:#DC2626;--red-bg:#FEF2F2;--red-border:#FECACA;--red-text:#7F1D1D;
+  --yellow:#92400E;--yellow-mid:#D97706;--yellow-bg:#FFFBEB;--yellow-border:#FDE68A;--yellow-text:#78350F;
+  --green:#14532D;--green-mid:#16A34A;--green-bg:#F0FDF4;--green-border:#BBF7D0;--green-text:#14532D;
+  --blue:#1D4ED8;--blue-dark:#1E40AF;--blue-light:#EFF6FF;--blue-border:#BFDBFE;--blue-text:#1E40AF;
+  --surface:#FFFFFF;--bg:#F0F4F8;--border:#E2E8F0;--border-dark:#CBD5E1;
+  --text:#0F172A;--text-2:#334155;--muted:#64748B;--muted-light:#94A3B8;
+  --radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.07);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.06);
+}
+body.dark{
+  --bg:#0B1220;
+  --surface:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.08);
+  --text:#E5E7EB;
+  --text-2:#CBD5E1;
+  --muted:#94A3B8;
+  --muted-light:#64748B;
+}
+
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding-bottom:72px}
+main{
+  padding: 16px 20px 0;
+  width:100%;
+  max-width:1100px;
+}
+/* ── Header ── */
+header{width:100%;background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%);padding:0 28px;display:flex;align-items:center;gap:14px;height:62px;position:sticky;top:0;z-index:30;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{width:36px;height:36px;background:#FFFFFF;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(220,38,38,.4)}
+.logo svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.header-text h1{font-size:15px;font-weight:700;color:#F8FAFC;letter-spacing:-.01em}
+.header-text p{font-size:10.5px;color:#94A3B8;margin-top:1px;letter-spacing:.01em}
+.who-badge{margin-left:auto;background:rgba(255,255,255,.08);color:#94A3B8;font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:5px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.12);letter-spacing:.06em;white-space:nowrap}
+
+/* ── Nav Tabs ── */
+.nav-tabs{display:flex;gap:2px;margin-left:20px}
+.nav-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;color:#94A3B8;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.nav-tab:hover{background:rgba(255,255,255,.1);color:#E2E8F0}
+.nav-tab.active{background:rgba(255,255,255,.15);color:#fff}
+.nav-tab-badge{background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:'JetBrains Mono',monospace;min-width:18px;text-align:center}
+.nav-tab-badge.yellow{background:#D97706}
+.nav-tab-badge.green{background:#16A34A}
+.nav-tab-badge.grey{background:#475569}
+
+/* ── Pages ── */
+.page{display:none}
+.page.active{display:flex;flex-direction:column;gap:18px}
+
+/* ── Queue page ── */
+.queue-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{background:var(--surface);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.stat-card.red  {border-color:var(--red-border);background:var(--red-bg)}
+.stat-card.yellow{border-color:var(--yellow-border);background:var(--yellow-bg)}
+.stat-card.green{border-color:var(--green-border);background:var(--green-bg)}
+.stat-card.total{border-color:var(--blue-border);background:var(--blue-light)}
+.stat-num{font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat-card.red   .stat-num{color:var(--red-mid)}
+.stat-card.yellow .stat-num{color:var(--yellow-mid)}
+.stat-card.green  .stat-num{color:var(--green-mid)}
+.stat-card.total  .stat-num{color:var(--blue)}
+.stat-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+.queue-section{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
+.queue-section-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.queue-section-dot{width:12px;height:12px;border-radius:50%}
+.queue-section-hdr.red-hdr   .queue-section-dot{background:var(--red-mid)}
+.queue-section-hdr.yellow-hdr .queue-section-dot{background:var(--yellow-mid)}
+.queue-section-hdr.green-hdr  .queue-section-dot{background:var(--green-mid)}
+.queue-section-title{font-size:13px;font-weight:700}
+.queue-section-hdr.red-hdr    .queue-section-title{color:var(--red-text)}
+.queue-section-hdr.yellow-hdr .queue-section-title{color:var(--yellow-text)}
+.queue-section-hdr.green-hdr  .queue-section-title{color:var(--green-text)}
+.queue-section-count{font-size:11px;color:var(--muted);margin-left:auto;font-family:'JetBrains Mono',monospace}
+.queue-section-target{font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:20px;margin-left:6px}
+.queue-section-hdr.red-hdr    .queue-section-target{background:var(--red-mid);color:#fff}
+.queue-section-hdr.yellow-hdr .queue-section-target{background:var(--yellow-mid);color:#fff}
+.queue-section-hdr.green-hdr  .queue-section-target{background:var(--green-mid);color:#fff}
+
+.queue-empty{padding:28px;text-align:center;color:var(--muted);font-size:13px}
+
+.patient-row-q{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .12s;cursor:default}
+.patient-row-q:last-child{border-bottom:none}
+.patient-row-q:hover{background:#FAFBFD}
+.q-token{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;width:36px;text-align:center;padding:4px 0;border-radius:6px;flex-shrink:0}
+.red-hdr   .q-token{background:var(--red-bg);color:var(--red-text)}
+.yellow-hdr .q-token{background:var(--yellow-bg);color:var(--yellow-text)}
+.green-hdr  .q-token{background:var(--green-bg);color:var(--green-text)}
+.q-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.red-hdr    .q-avatar{background:var(--red-bg);color:var(--red-text)}
+.yellow-hdr .q-avatar{background:var(--yellow-bg);color:var(--yellow-text)}
+.green-hdr  .q-avatar{background:var(--green-bg);color:var(--green-text)}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.q-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.q-dept{font-size:11.5px;font-weight:500;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.q-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-align:right;flex-shrink:0}
+.q-btn-del{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .12s;flex-shrink:0}
+.q-btn-del:hover{background:var(--red-bg);color:var(--red-mid);border-color:var(--red-border)}
+.q-btn-del svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+.queue-actions{display:flex;gap:10px;margin-bottom:4px}
+.queue-clear-btn{padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.queue-clear-btn:hover{border-color:#FDA4A4;color:var(--red-mid);background:var(--red-bg)}
+.queue-clear-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Section headers ── */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.sec-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sec-icon svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.sec-icon.blue{background:linear-gradient(135deg,#2563EB,#1D4ED8)}
+.sec-icon.teal{background:linear-gradient(135deg,#0891B2,#0E7490)}
+.sec-icon.violet{background:linear-gradient(135deg,#7C3AED,#6D28D9)}
+.sec-icon.green{background:linear-gradient(135deg,#16A34A,#15803D)}
+.sec-hdr-text h2{font-size:14px;font-weight:600;color:var(--text)}
+.sec-hdr-text p{font-size:11.5px;color:var(--muted);margin-top:1px}
+.sec-divider{flex:1;height:1px;background:var(--border);margin-left:8px}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px 26px;
+  box-shadow:var(--shadow);
+}
+
+/* ONLY apply glass in dark mode */
+body.dark .card{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+
+/* ── Form grid ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.field-label{font-size:12px;font-weight:500;color:var(--text-2);display:flex;align-items:center;gap:4px}
+.req{color:var(--red-mid)}
+input[type=text],input[type=number],select,textarea{
+  font-family:'Inter',sans-serif;font-size:13.5px;color:var(--text);
+  background:#FAFBFC;border:1.5px solid var(--border);border-radius:8px;
+  padding:9px 12px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s,background .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,78,216,.1);background:#fff}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+.input-wrap{position:relative}
+.input-wrap input{padding-right:46px}
+.unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);pointer-events:none;font-weight:500}
+
+/* ── Symptom combined layout ── */
+.sym-both-wrap{display:flex;flex-direction:column;gap:16px}
+.sym-panel{border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
+.sym-panel-hdr{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--bg);border-bottom:1.5px solid var(--border);cursor:pointer;user-select:none}
+.sym-panel-hdr-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sym-panel-hdr-icon svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sym-panel-hdr-icon.blue{background:var(--blue)}
+.sym-panel-hdr-icon.amber{background:#D97706}
+.sym-panel-title{font-size:12.5px;font-weight:600;color:var(--text)}
+.sym-panel-sub{font-size:11px;color:var(--muted);margin-left:auto}
+.sym-panel-chevron{width:14px;height:14px;flex-shrink:0;transition:transform .2s;fill:none;stroke:var(--muted);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sym-panel-chevron.open{transform:rotate(180deg)}
+.sym-panel-body{padding:14px}
+.sym-panel-body.hidden{display:none}
+.manual-sym{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.55}
+.manual-hint{margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6;background:var(--bg);border-radius:6px;padding:8px 10px;border:1px solid var(--border)}
+.manual-detected{margin-top:8px;display:none}
+.manual-detected-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.manual-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;margin:2px 3px 2px 0;font-weight:500}
+.manual-tag.RED{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-border)}
+.manual-tag.YELLOW{background:var(--yellow-bg);color:var(--yellow-text);border:1px solid var(--yellow-border)}
+
+/* ── Symptom checklist ── */
+.sym-category{margin-bottom:14px}
+.sym-cat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.sym-cat-label::before{content:'';display:inline-block;width:3px;height:12px;border-radius:2px}
+.sym-cat-label.lbl-red::before{background:var(--red-mid)}
+.sym-cat-label.lbl-yellow::before{background:var(--yellow-mid)}
+.sym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:5px}
+.sym-item{display:flex;align-items:flex-start;gap:8px;padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:all .12s;background:#FAFBFC;user-select:none}
+.sym-item:hover{background:#fff;border-color:#94A3B8;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sym-item input[type=checkbox]{margin-top:2px;width:13px;height:13px;flex-shrink:0;accent-color:var(--blue);cursor:pointer}
+.sym-item span{font-size:12px;line-height:1.4;color:var(--text-2)}
+.sym-item.red-sym{border-color:var(--red-border);background:#FFF8F8}
+.sym-item.red-sym:hover{background:var(--red-bg)}
+.sym-item.yellow-sym{border-color:var(--yellow-border);background:#FFFEF5}
+.sym-item.yellow-sym:hover{background:var(--yellow-bg)}
+.sym-item input:checked~span{font-weight:500}
+.sym-item.red-sym input:checked~span{color:var(--red-text)}
+.sym-item.yellow-sym input:checked~span{color:var(--yellow-text)}
+.manual-sym{font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.5}
+
+/* ── Submit btn ── */
+.submit-btn{margin-top:18px;width:100%;padding:13px;background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;letter-spacing:-.01em;box-shadow:0 4px 14px rgba(29,78,216,.35)}
+.submit-btn:hover{background:linear-gradient(135deg,#1D4ED8,#1E40AF);box-shadow:0 6px 18px rgba(29,78,216,.4);transform:translateY(-1px)}
+.submit-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(29,78,216,.3)}
+.submit-btn svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Loading overlay ── */
+#loading{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+#loading.show{display:flex}
+.loading-card{background:#fff;border-radius:16px;padding:36px 48px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.spinner{width:48px;height:48px;border:4px solid #E2E8F0;border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-steps{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.loading-step{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px;opacity:0;transition:opacity .3s}
+.loading-step.active{opacity:1;color:var(--blue-dark);font-weight:500}
+.loading-step.done{opacity:.5;color:var(--green-mid)}
+.loading-step svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.loading-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+.loading-sub{font-size:12px;color:var(--muted)}
+
+/* ── Output layout ── */
+#output{display:none}
+.output-layout{display:grid;grid-template-columns:1fr 296px;gap:18px;align-items:start}
+
+/* ── Priority bar ── */
+.priority-bar{border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px;border:2px solid}
+.priority-bar.RED   {background:var(--red-bg);border-color:var(--red-mid)}
+.priority-bar.YELLOW{background:var(--yellow-bg);border-color:var(--yellow-mid)}
+.priority-bar.GREEN {background:var(--green-bg);border-color:var(--green-mid)}
+.p-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0}
+.RED .p-dot{background:var(--red-mid);animation:pulse 1.5s infinite}
+.YELLOW .p-dot{background:var(--yellow-mid);animation:pulse 2s infinite}
+.GREEN .p-dot{background:var(--green-mid)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.3)}}
+.p-label{font-size:18px;font-weight:700}
+.RED .p-label{color:var(--red-text)}
+.YELLOW .p-label{color:var(--yellow-text)}
+.GREEN .p-label{color:var(--green-text)}
+.p-sublabel{font-size:11.5px;margin-top:3px;opacity:.8;font-weight:400}
+.RED .p-sublabel{color:var(--red-text)}
+.YELLOW .p-sublabel{color:var(--yellow-text)}
+.GREEN .p-sublabel{color:var(--green-text)}
+.p-time{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;white-space:nowrap}
+.RED .p-time{background:var(--red-mid);color:#fff}
+.YELLOW .p-time{background:var(--yellow-mid);color:#fff}
+.GREEN .p-time{background:var(--green-mid);color:#fff}
+
+/* ── Patient row ── */
+.patient-row{display:flex;align-items:center;gap:12px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.p-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);color:var(--blue);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #BFDBFE}
+.p-name{font-size:15px;font-weight:700}
+.p-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.p-ts{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-align:right;line-height:1.6}
+
+/* ── Info grid ── */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.iblock{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px}
+.iblock-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+.iblock-val{font-size:13.5px;font-weight:500;color:var(--text)}
+
+/* ── Dept box ── */
+.dept-box{border:1.5px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:13px;display:flex;gap:12px;align-items:flex-start;transition:border-color .2s,background .2s}
+.dept-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.dept-main{flex:1;min-width:0}
+.dept-lbl-sm{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+.dept-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.dept-reason{font-size:12px;color:var(--muted);line-height:1.55}
+.dept-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dept-tag{font-size:10.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-weight:500}
+
+/* ── Dir box ── */
+.dir-box{background:var(--blue-light);border:1.5px solid var(--blue-border);border-radius:10px;padding:13px 15px;margin-bottom:13px}
+.dir-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.dir-hdr-icon{width:26px;height:26px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dir-hdr-icon svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.dir-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue-text)}
+.dir-room{font-size:12.5px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.dir-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.dir-step{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.5;color:var(--text-2)}
+.dir-step-num{width:19px;height:19px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.dir-note{font-size:11.5px;color:#1E40AF;padding:8px 11px;background:rgba(29,78,216,.07);border-radius:6px;border-left:3px solid var(--blue);line-height:1.55}
+
+/* ── Triggers ── */
+.triggered-box{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:13px}
+.triggered-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.trigger-tag{display:inline-flex;align-items:center;font-size:11.5px;padding:4px 10px;border-radius:20px;margin:3px 3px 3px 0;font-weight:500}
+.trigger-tag.RED   {background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-border)}
+.trigger-tag.YELLOW{background:var(--yellow-bg);color:var(--yellow-text);border:1px solid var(--yellow-border)}
+.trigger-tag.VITAL {background:var(--blue-light);color:var(--blue-text);border:1px solid var(--blue-border)}
+
+/* ── Nav box ── */
+.nav-box{background:#F0FDF4;border:1.5px solid var(--green-border);border-radius:10px;padding:13px 15px;display:flex;gap:11px;align-items:flex-start;margin-bottom:4px}
+.nav-icon-wrap{width:28px;height:28px;background:var(--green-mid);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-icon-wrap svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.nav-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green-text);margin-bottom:4px}
+.nav-val{font-size:12.5px;line-height:1.65;color:#15532D}
+
+/* ── Reset btn ── */
+.reset-btn{margin-top:14px;width:100%;padding:11px;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;font-weight:500}
+.reset-btn:hover{background:var(--bg);color:var(--text);border-color:var(--border-dark)}
+
+/* ── Legend ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-weight:500}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+
+/* ─────────────────────────────────
+   PRINTED CHIT
+───────────────────────────────── */
+.chit-wrap{position:sticky;top:80px}
+
+.chit{
+  background:#fff;
+  border:1px solid #CBD5E1;
+  border-radius:6px;
+  font-family:'JetBrains Mono',monospace;
+  overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.03);
+}
+
+/* jagged top edge via SVG mask */
+.chit-teeth-top,.chit-teeth-bottom{width:100%;height:12px;background:#fff;position:relative;overflow:hidden}
+.chit-teeth-top{background:var(--bg);border-bottom:none}
+.chit-teeth-top::after,.chit-teeth-bottom::after{
+  content:'';position:absolute;left:-1%;width:102%;
+  background-repeat:repeat-x;background-size:16px 12px;height:12px
+}
+.chit-teeth-top::after{
+  bottom:0;
+  background-image:radial-gradient(circle at 8px 0,var(--bg) 6px,#fff 6px);
+}
+.chit-teeth-bottom::after{
+  top:0;background:#fff;
+  background-image:radial-gradient(circle at 8px 12px,#fff 6px,transparent 6px);
+  background-color:transparent;
+}
+.chit-teeth-bottom{background:transparent;border-top:none}
+
+.chit-header{background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%);padding:16px;text-align:center}
+.chit-cross{width:28px;height:28px;margin:0 auto 8px;background:rgba(255,255,255,.15);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.chit-cross svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round}
+.chit-hospital{color:#fff;font-size:11.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.chit-sub{color:#94A3B8;font-size:8.5px;margin-top:4px;letter-spacing:.06em}
+
+.chit-token-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 10px;background:#F8FAFC;border-bottom:1px dashed #CBD5E1}
+.chit-token-side{display:flex;flex-direction:column}
+.chit-token-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#94A3B8;margin-bottom:2px}
+.chit-token-num{font-size:30px;font-weight:500;color:#0F172A;line-height:1}
+.chit-ts-block{text-align:right;font-size:8.5px;color:#94A3B8;line-height:1.8}
+
+.chit-band{padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:2px solid;border-bottom:2px solid}
+.chit-band.RED   {background:var(--red-bg);border-color:var(--red-mid)}
+.chit-band.YELLOW{background:var(--yellow-bg);border-color:var(--yellow-mid)}
+.chit-band.GREEN {background:var(--green-bg);border-color:var(--green-mid)}
+.chit-band-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chit-band.RED    .chit-band-dot{background:var(--red-mid)}
+.chit-band.YELLOW .chit-band-dot{background:var(--yellow-mid)}
+.chit-band.GREEN  .chit-band-dot{background:var(--green-mid)}
+.chit-band-label{font-size:10.5px;font-weight:500;flex:1}
+.chit-band.RED    .chit-band-label{color:var(--red-text)}
+.chit-band.YELLOW .chit-band-label{color:var(--yellow-text)}
+.chit-band.GREEN  .chit-band-label{color:var(--green-text)}
+.chit-band-wait{font-size:8px;white-space:nowrap}
+.chit-band.RED    .chit-band-wait{color:var(--red-text)}
+.chit-band.YELLOW .chit-band-wait{color:var(--yellow-text)}
+.chit-band.GREEN  .chit-band-wait{color:var(--green-text)}
+
+.chit-body{padding:2px 14px 0}
+.chit-row{padding:9px 0;border-bottom:1px dashed #E2E8F0}
+.chit-row:last-child{border-bottom:none}
+.chit-row-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#94A3B8;margin-bottom:3px}
+.chit-row-val{font-size:12px;color:#0F172A;line-height:1.5}
+.chit-row-val.big{font-size:14px;font-weight:600}
+.chit-dir-list{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.chit-dir-item{display:flex;gap:5px;font-size:10px;color:#334155;line-height:1.5}
+.chit-dir-n{color:#94A3B8;flex-shrink:0}
+
+.chit-dashed{border:none;border-top:1.5px dashed #CBD5E1;margin:0 14px}
+
+.chit-barcode-row{padding:10px 14px 0;display:flex;flex-direction:column;align-items:center}
+.chit-bars{display:flex;align-items:flex-end;gap:1px;height:28px}
+.chit-bars span{display:inline-block;background:#CBD5E1;border-radius:1px}
+.chit-barcode-num{font-size:7.5px;color:#94A3B8;letter-spacing:.18em;margin-top:4px}
+
+.chit-footer{padding:8px 14px 14px;text-align:center}
+.chit-footer-txt{font-size:9px;color:#94A3B8;line-height:1.8;letter-spacing:.02em}
+.chit-footer-emph{font-size:9px;color:#64748B;font-weight:500}
+
+.chit-print-btn{margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#0F172A,#1E293B);color:#fff;border:none;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;font-weight:500}
+.chit-print-btn:hover{background:linear-gradient(135deg,#1E293B,#334155)}
+.chit-print-btn svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Responsive ── */
+@media(max-width:720px){
+  .output-layout{grid-template-columns:1fr}
+  .chit-wrap{position:static}
+  .form-grid{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr}
+  .sym-grid{grid-template-columns:1fr}
+  header{padding:0 16px}
+  main{padding:16px 12px 0}
+  .card{padding:18px 16px}
+  .who-badge{display:none}
+}
+
+/* ── Print ── */
+@media print{
+  header,#form-card,#loading,.reset-btn,.chit-print-btn,#output-left{display:none!important}
+  body{padding:0;background:#fff}
+  .output-layout{grid-template-columns:1fr!important;display:block}
+  .chit-wrap{position:static}
+  .chit{box-shadow:none;border:1px solid #aaa;max-width:340px;margin:20px auto}
+  #output{display:block!important}
+}
+.theme-btn{
+
+  margin-left:10px;
+
+  width:38px;
+
+  height:22px;
+
+  border-radius:20px;
+
+  border:1px solid rgba(255,255,255,0.15);
+
+  background:rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(10px);
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  cursor:pointer;
+
+}
+
+/* dark mode hover fix */
+
+body.dark .patient-row-q:hover{
+
+  background: rgba(255,255,255,0.04);
+
+}
+/* 🌙 Dark mode input fix */
+body.dark input,
+body.dark select,
+body.dark textarea{
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  color: var(--text);
+}
+
+/* placeholder text */
+body.dark input::placeholder,
+body.dark textarea::placeholder{
+  color: rgba(255,255,255,0.4);
+}
+
+/* focus state */
+body.dark input:focus,
+body.dark select:focus,
+body.dark textarea:focus{
+  background: rgba(255,255,255,0.08);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(29,78,216,0.2);
+}
+/* checkboxes fix */
+body.dark .sym-item{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+
+body.dark .sym-item:hover{
+  background: rgba(255,255,255,0.08);
+}
+/* 🌙 Dark mode stat cards */
+body.dark .stat-card{
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* soften colored variants */
+body.dark .stat-card.red{
+  background: rgba(220,38,38,0.08);
+  border-color: rgba(220,38,38,0.25);
+}
+
+body.dark .stat-card.yellow{
+  background: rgba(217,119,6,0.08);
+  border-color: rgba(217,119,6,0.25);
+}
+
+body.dark .stat-card.green{
+  background: rgba(22,163,74,0.08);
+  border-color: rgba(22,163,74,0.25);
+}
+
+body.dark .stat-card.total{
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.25);
+}
+/* 🌙 Queue containers */
+body.dark .queue-section{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+}
+body.dark .queue-section-hdr{
+  background: rgba(255,255,255,0.03);
+}
+body.dark .patient-row-q{
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+body.dark .patient-row-q:hover{
+  background: rgba(255,255,255,0.06);
+}
+body.dark .queue-empty{
+  color: rgba(255,255,255,0.4);
+}
+body.dark .q-btn-del{
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+}
+
+body.dark .q-btn-del:hover{
+  background: rgba(220,38,38,0.1);
+  color: #DC2626;
+}
+.queue-section{
+  margin-top: 16px;
+}
+.queue-section + .queue-section{
+  margin-top: 16px;
+}
+/* 🌙 Fix queue header text visibility */
+body.dark .queue-section-hdr.red-hdr .queue-section-title{
+  color: #F87171; /* brighter red */
+}
+
+body.dark .queue-section-hdr.yellow-hdr .queue-section-title{
+  color: #FBBF24; /* brighter yellow */
+}
+
+body.dark .queue-section-hdr.green-hdr .queue-section-title{
+  color: #4ADE80; /* brighter green */
+}
+body.dark .queue-section-hdr.red-hdr .queue-section-dot{
+  background: #EF4444;
+}
+
+body.dark .queue-section-hdr.yellow-hdr .queue-section-dot{
+  background: #F59E0B;
+}
+
+body.dark .queue-section-hdr.green-hdr .queue-section-dot{
+  background: #22C55E;
+}
+/* 🌙 DARK MODE FIX — OUTPUT CARDS */
+
+/* Priority bar (RED / YELLOW / GREEN top banner) */
+body.dark .priority-bar.RED{
+  background: rgba(185, 28, 28, 0.15);
+  border-color: #EF4444;
+}
+
+body.dark .priority-bar.YELLOW{
+  background: rgba(217, 119, 6, 0.15);
+  border-color: #F59E0B;
+}
+
+body.dark .priority-bar.GREEN{
+  background: rgba(22, 163, 74, 0.15);
+  border-color: #22C55E;
+}
+
+/* Fix text inside priority */
+body.dark .p-label{
+  color: #F9FAFB;
+}
+
+body.dark .p-sublabel{
+  color: #CBD5E1;
+}
+
+/* ⛑️ Suggested Department box */
+body.dark .dept-box{
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+body.dark .dept-name{
+  color: #F9FAFB;
+}
+
+body.dark .dept-reason{
+  color: #CBD5E1;
+}
+
+/* 🧭 Navigation box */
+body.dark .dir-box{
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.4);
+}
+
+body.dark .dir-room{
+  color: #E2E8F0;
+}
+
+body.dark .dir-step{
+  color: #CBD5E1;
+}
+
+body.dark .dir-note{
+  background: rgba(59,130,246,0.15);
+  color: #BFDBFE;
+}
+
+/* 🧠 Trigger box */
+body.dark .triggered-box{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+
+body.dark .trigger-tag{
+  background: rgba(255,255,255,0.06);
+  color: #E5E7EB;
+}
+
+/* 🤖 AI explanation */
+body.dark #out-explanation{
+  color: #E5E7EB;
+}
+
+/* 🟢 Clinical next steps */
+body.dark .nav-box{
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.4);
+}
+
+body.dark .nav-val{
+  color: #D1FAE5;
+}
+/* ── Typography System Fix ── */
+
+/* Section titles (AI, Clinical Steps) */
+.triggered-lbl,
+.nav-lbl,
+#out-explanation-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Main content text */
+#out-explanation,
+.nav-val {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* Slight emphasis inside text */
+.nav-val strong,
+#out-explanation strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Disclaimer line */
+.warning-text {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Better spacing */
+.triggered-box,
+.nav-box {
+  padding: 16px 18px;
+}
+
+/* Dark mode refinement */
+body.dark #out-explanation,
+body.dark .nav-val {
+  color: #E5E7EB;
+}
+
+body.dark .triggered-lbl,
+body.dark .nav-lbl {
+  color: #94A3B8;
+}
+/* ── AI Explanation Consistency Fix ── */
+
+.explanation-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Main explanation text */
+#out-explanation {
+  font-size: 13.5px;
+  line-height: 1.65;
+  font-weight: 400;
+  color: var(--text);
+}
+
+/* Warning inside box */
+.explanation-warning {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  opacity: 0.9;
+}
+
+/* Dark mode */
+body.dark #out-explanation {
+  color: #E5E7EB;
+}
+
+body.dark .explanation-warning {
+  color: #94A3B8;
+}
+.explanation-warning {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <div class="loading-title">Analyzing Patient Data</div>
+    <div class="loading-sub">Applying WHO IITT triage algorithm…</div>
+    <div class="loading-steps" id="loading-steps">
+      <div class="loading-step" id="ls1"><svg viewBox="0 0 24 24"><path d="M12 22C6.5 22 2 17.5 2 12S6.5 2 12 2s10 4.5 10 10"/></svg> Checking vital signs…</div>
+      <div class="loading-step" id="ls2"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Evaluating red criteria…</div>
+      <div class="loading-step" id="ls3"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Assigning triage priority…</div>
+      <div class="loading-step" id="ls4"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Routing to department…</div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="nav-tabs">
+<button class="nav-tab active" onclick="showPage('triage', this)">Triage</button>
+<button class="nav-tab" onclick="showPage('records', this)">Records</button>
+</div>
+  <div class="logo">️🏥</div>
+  <div class="header-text">
+    <h1>Pakistan Govt. Hospital</h1>
+    <p>Smart OPD Triage System</p>
+  </div>
+  <div class="who-badge">WHO IITT Compliant</div>
+  <button id="theme-toggle" class="theme-btn">🌙</button>
+</header>
+
+<main>
+  
+<div id="triage" class="page active">
+
+<!-- ── FORM ── -->
+<div class="card" id="form-card">
+
+  <!-- Patient Info -->
+  <div class="sec-hdr">
+    <div class="sec-icon blue"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="sec-hdr-text"><h2>Patient Information</h2><p>Basic demographic details</p></div>
+    <div class="sec-divider"></div>
+  </div>
+
+  <div class="form-grid">
+    <div class="fg">
+      <div class="field-label">Patient Name <span class="req">*</span></div>
+      <input type="text" id="name" placeholder="Full name">
+    </div>
+    <div class="fg">
+      <div class="field-label">Age <span class="req">*</span></div>
+      <input type="number" id="age" placeholder="Years" min="0" max="120">
+    </div>
+    <div class="fg">
+      <div class="field-label">Gender <span class="req">*</span></div>
+      <select id="gender">
+        <option value="" disabled selected>Select gender</option>
+        <option>Male</option><option>Female</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="field-label">Pregnancy Status</div>
+      <select id="pregnant">
+        <option value="no">Not pregnant / N/A</option>
+        <option value="yes">Pregnant</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Vitals -->
+  <div class="sec-hdr" style="margin-top:22px">
+    <div class="sec-icon teal"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <div class="sec-hdr-text"><h2>Vital Signs</h2><p>Optional — used for IITT vital sign escalation</p></div>
+    <div class="sec-divider"></div>
+  </div>
+
+  <div class="form-grid">
+    <div class="fg">
+      <div class="field-label">Temperature</div>
+      <div class="input-wrap"><input type="number" id="temp" placeholder="37.0" step="0.1" min="30" max="45"><span class="unit">°C</span></div>
+    </div>
+    <div class="fg">
+      <div class="field-label">Heart Rate</div>
+      <div class="input-wrap"><input type="number" id="hr" placeholder="80" min="0" max="300"><span class="unit">bpm</span></div>
+    </div>
+    <div class="fg">
+      <div class="field-label">Respiratory Rate</div>
+      <div class="input-wrap"><input type="number" id="rr" placeholder="16" min="0" max="100"><span class="unit">/min</span></div>
+    </div>
+    <div class="fg">
+      <div class="field-label">SpO₂</div>
+      <div class="input-wrap"><input type="number" id="spo2" placeholder="98" min="50" max="100"><span class="unit">%</span></div>
+    </div>
+    <div class="fg">
+      <div class="field-label">AVPU Level</div>
+      <select id="avpu">
+        <option value="A">A — Alert</option>
+        <option value="V">V — Voice response</option>
+        <option value="P">P — Pain response</option>
+        <option value="U">U — Unresponsive</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="field-label">Systolic BP</div>
+      <div class="input-wrap"><input type="number" id="sbp" placeholder="120" min="0" max="300"><span class="unit">mmHg</span></div>
+    </div>
+  </div>
+
+  <!-- Symptoms -->
+  <div class="sec-hdr" style="margin-top:22px">
+    <div class="sec-icon violet"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></div>
+    <div class="sec-hdr-text"><h2>Symptom Assessment</h2><p>Use the checklist, free-text description, or both — all inputs are combined</p></div>
+    <div class="sec-divider"></div>
+  </div>
+
+  <div class="sym-both-wrap">
+
+    <!-- Panel 1: WHO Checklist -->
+    <div class="sym-panel">
+      <div class="sym-panel-hdr" onclick="togglePanel('panel-checklist','chev-checklist')">
+        <div class="sym-panel-hdr-icon blue"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+        <div>
+          <div class="sym-panel-title">WHO IITT Symptom Checklist</div>
+        </div>
+        <span class="sym-panel-sub">Click to expand / collapse</span>
+        <svg class="sym-panel-chevron open" id="chev-checklist" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="sym-panel-body" id="panel-checklist">
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:var(--red-mid)"></div> Red — Emergency criteria</div>
+          <div class="leg"><div class="leg-dot" style="background:var(--yellow-mid)"></div> Yellow — Urgent criteria</div>
+        </div>
+        <div style="height:10px"></div>
+        <div id="symptom-section"></div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Manual Description -->
+    <div class="sym-panel">
+      <div class="sym-panel-hdr" onclick="togglePanel('panel-manual','chev-manual')">
+        <div class="sym-panel-hdr-icon amber"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+        <div>
+          <div class="sym-panel-title">Free-Text Symptom Description</div>
+        </div>
+        <span class="sym-panel-sub">Optional — analysed automatically</span>
+        <svg class="sym-panel-chevron open" id="chev-manual" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="sym-panel-body" id="panel-manual">
+        <p class="manual-sym">Describe symptoms in your own words. The system maps them to WHO IITT red/yellow criteria and combines results with the checklist above.</p>
+        <textarea id="manual-symptoms" placeholder="e.g. Patient has 3 days of high fever, severe headache, neck stiffness, vomiting. Appears confused and lethargic. No trauma. BP 145/90, HR 118…" oninput="previewManual()"></textarea>
+        <div class="manual-hint">💡 <strong>Tip:</strong> Mention severity, onset, and key signs — e.g. "heavy bleeding", "can't breathe", "active seizure", "snake bite", "chest pain". The more detail, the better the classification.</div>
+        <div class="manual-detected" id="manual-detected">
+          <div class="manual-detected-lbl">Detected from text</div>
+          <div id="manual-detected-tags"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end sym-both-wrap -->
+
+  <button class="submit-btn" onclick="startTriage()">
+    <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+    Run WHO IITT Assessment
+  </button>
+</div>
+
+<!-- ── OUTPUT ── -->
+<div id="output">
+<div class="output-layout">
+
+<!-- LEFT: Triage detail -->
+<div class="card" id="output-left">
+  <div class="sec-hdr">
+    <div class="sec-icon green"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+    <div class="sec-hdr-text"><h2>Triage Result</h2><p>WHO IITT Classification</p></div>
+    <div class="sec-divider"></div>
+  </div>
+
+  <div class="patient-row">
+    <div class="p-avatar" id="out-initials">—</div>
+    <div>
+      <div class="p-name" id="out-name">—</div>
+      <div class="p-meta" id="out-meta">—</div>
+    </div>
+    <div class="p-ts" id="out-ts">—</div>
+  </div>
+
+  <div class="priority-bar" id="priority-bar">
+    <div class="p-dot"></div>
+    <div>
+      <div class="p-label" id="p-label">—</div>
+      <div class="p-sublabel" id="p-sublabel">—</div>
+    </div>
+    <div class="p-time" id="p-time">—</div>
+  </div>
+
+  <div class="info-grid">
+    <div class="iblock"><div class="iblock-lbl">Action</div><div class="iblock-val" id="out-action">—</div></div>
+    <div class="iblock"><div class="iblock-lbl">Treatment Target</div><div class="iblock-val" id="out-target">—</div></div>
+    <div class="iblock"><div class="iblock-lbl">Protocol</div><div class="iblock-val" id="out-protocol">—</div></div>
+    <div class="iblock"><div class="iblock-lbl">Triage Area</div><div class="iblock-val" id="out-area">—</div></div>
+  </div>
+
+  <div class="dept-box" id="dept-box">
+    <div class="dept-icon" id="dept-icon">🏥</div>
+    <div class="dept-main">
+      <div class="dept-lbl-sm">Suggested Department</div>
+      <div class="dept-name" id="dept-name">—</div>
+      <div class="dept-reason" id="dept-reason">—</div>
+      <div class="dept-tags" id="dept-tags"></div>
+    </div>
+  </div>
+
+  <div class="dir-box">
+    <div class="dir-hdr">
+      <div class="dir-hdr-icon"><svg viewBox="0 0 24 24"><path d="M3 12h18M13 6l6 6-6 6"/></svg></div>
+      <div>
+        <div class="dir-lbl">Navigation Directions</div>
+        <div class="dir-room" id="dir-room">—</div>
+      </div>
+    </div>
+    <div class="dir-steps" id="dir-steps"></div>
+    <div class="dir-note" id="dir-note">—</div>
+  </div>
+
+  <div class="triggered-box">
+    <div class="triggered-lbl">Triggered IITT Criteria</div>
+    <div id="out-triggers">—</div>
+  </div>
+  
+<div class="triggered-box explanation-box">
+  <div class="triggered-lbl">AI Decision Explanation</div>
+  
+  <div id="out-explanation">—</div>
+
+  <div class="explanation-warning">
+    ⚠️ This system is a decision-support tool based on WHO IITT guidelines and does not replace clinical judgment.
+  </div>
+</div>
+
+  <div class="nav-box">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
+    <div>
+      <div class="nav-lbl">Clinical Next Steps</div>
+      <div class="nav-val" id="out-nav">—</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="resetForm()">← Assess New Patient</button>
+</div>
+
+<!-- RIGHT: Printed chit -->
+<div class="chit-wrap">
+  <div class="chit" id="chit">
+
+    <div class="chit-header">
+      <div class="chit-cross"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg></div>
+      <div class="chit-hospital">Pakistan Govt. Hospital</div>
+      <div class="chit-sub">OPD TRIAGE SLIP · WHO IITT PROTOCOL</div>
+    </div>
+
+    <div class="chit-token-row">
+      <div class="chit-token-side">
+        <div class="chit-token-lbl">Token No.</div>
+        <div class="chit-token-num" id="chit-token">—</div>
+      </div>
+      <div class="chit-ts-block" id="chit-ts">—</div>
+    </div>
+
+    <div class="chit-band" id="chit-band">
+      <div class="chit-band-dot"></div>
+      <div class="chit-band-label" id="chit-band-label">—</div>
+      <div class="chit-band-wait" id="chit-band-wait">—</div>
+    </div>
+
+    <div class="chit-body">
+      <div class="chit-row">
+        <div class="chit-row-lbl">Patient Name</div>
+        <div class="chit-row-val big" id="chit-name">—</div>
+      </div>
+      <div class="chit-row">
+        <div class="chit-row-lbl">Age / Gender</div>
+        <div class="chit-row-val" id="chit-age-gender">—</div>
+      </div>
+      <div class="chit-row">
+        <div class="chit-row-lbl">Suggested Department</div>
+        <div class="chit-row-val big" id="chit-dept">—</div>
+      </div>
+      <div class="chit-row">
+        <div class="chit-row-lbl">Location</div>
+        <div class="chit-row-val" id="chit-room">—</div>
+      </div>
+      <div class="chit-row">
+        <div class="chit-row-lbl">Directions</div>
+        <div class="chit-dir-list" id="chit-dir-steps"></div>
+      </div>
+      <div class="chit-row">
+        <div class="chit-row-lbl">Staff Note</div>
+        <div class="chit-row-val" id="chit-note" style="font-size:10px;color:#64748B;line-height:1.5">—</div>
+      </div>
+    </div>
+
+    <hr class="chit-dashed">
+
+    <div class="chit-barcode-row">
+      <div class="chit-bars" id="chit-bars"></div>
+      <div class="chit-barcode-num" id="chit-barcode-num">—</div>
+    </div>
+
+    <div class="chit-footer">
+      <div class="chit-footer-txt">Keep this slip with you at all times.<br>Present at department reception on arrival.</div>
+      <div class="chit-footer-emph" style="margin-top:5px">Emergency: Ext. 999 &nbsp;·&nbsp; Reception: Ext. 100</div>
+    </div>
+
+  </div>
+
+  <button class="chit-print-btn" onclick="window.print()">
+    <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+    PRINT / SAVE CHIT
+  </button>
+</div>
+
+</div><!-- end output-layout -->
+</div><!-- end #output -->
+</div>
+
+
+<div id="records" class="page">
+  <div class="card">
+    <div class="queue-actions">
+      <button class="queue-clear-btn" onclick="clearAllRecords()">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 6h18M8 6v-2h8v2M6 6l1 14h10l1-14"/>
+        </svg>
+        Clear All Records
+      </button>
+    </div>
+    <h2 style="margin-bottom:10px">Patient Records</h2>
+    <div class="queue-stats">
+  <div class="stat-card red">
+    <div class="stat-num" id="count-red">0</div>
+    <div class="stat-lbl">RED</div>
+  </div>
+  <div class="stat-card yellow">
+    <div class="stat-num" id="count-yellow">0</div>
+    <div class="stat-lbl">YELLOW</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num" id="count-green">0</div>
+    <div class="stat-lbl">GREEN</div>
+  </div>
+  <div class="stat-card total">
+    <div class="stat-num" id="count-total">0</div>
+    <div class="stat-lbl">TOTAL</div>
+  </div>
+</div>
+
+<div class="queue-section">
+  <div class="queue-section-hdr red-hdr">
+    <div class="queue-section-dot"></div>
+    <div class="queue-section-title">RED Queue</div>
+  </div>
+  <div id="queue-red"></div>
+</div>
+
+<div class="queue-section">
+  <div class="queue-section-hdr yellow-hdr">
+    <div class="queue-section-dot"></div>
+    <div class="queue-section-title">YELLOW Queue</div>
+  </div>
+  <div id="queue-yellow"></div>
+</div>
+
+<div class="queue-section">
+  <div class="queue-section-hdr green-hdr">
+    <div class="queue-section-dot"></div>
+    <div class="queue-section-title">GREEN Queue</div>
+  </div>
+  <div id="queue-green"></div>
+</div>
+  </div>
+  
+
+</div>
+
+</main>
+
+
+<script>
+
+function showPage(pageId, btn){
+
+  // Switch pages
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+
+  // update active tab
+  document.querySelectorAll('.nav-tab').forEach(tab=>tab.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+
+  // Load records if needed
+  if(pageId === 'records'){
+    loadRecords();
+  }
+}
+// ─────────────────────────────────────────────────────────
+// PANEL TOGGLE (collapsible sections)
+// ─────────────────────────────────────────────────────────
+function togglePanel(bodyId, chevId){
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  const hidden = body.classList.toggle('hidden');
+  chev.classList.toggle('open', !hidden);
+}
+
+// ─────────────────────────────────────────────────────────
+// LIVE MANUAL PREVIEW — highlight matched criteria as user types
+// ─────────────────────────────────────────────────────────
+function previewManual(){
+  const text = document.getElementById('manual-symptoms').value;
+  const allSymDefs = [...Object.values(ADULT_SYMPTOMS),...Object.values(PED_SYMPTOMS)].flat();
+  const symMap = {}; allSymDefs.forEach(s=>{ symMap[s.id]=s; });
+  const ids = parseManualSymptoms(text);
+  const detected = document.getElementById('manual-detected');
+  const tags = document.getElementById('manual-detected-tags');
+  if(ids.length === 0 || text.trim() === ''){
+    detected.style.display='none'; return;
+  }
+  detected.style.display='block';
+  // deduplicate by label
+  const seen = new Set();
+  tags.innerHTML = ids
+    .filter(id => symMap[id] && !seen.has(symMap[id].label) && seen.add(symMap[id].label))
+    .map(id => `<span class="manual-tag ${symMap[id].level}">● ${symMap[id].label}</span>`)
+    .join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// WHO IITT SYMPTOM DEFINITIONS
+// ─────────────────────────────────────────────────────────
+const ADULT_SYMPTOMS = {
+  "Airway & Breathing — RED":[
+    {id:"a_stridor",      label:"Stridor",                                      level:"RED"},
+    {id:"a_resp_distress",label:"Respiratory distress or central cyanosis",     level:"RED"},
+    {id:"a_unresponsive", label:"Unresponsive",                                 level:"RED"},
+  ],
+  "Circulation — RED":[
+    {id:"a_cap_refill",   label:"Capillary refill > 3 sec",                    level:"RED"},
+    {id:"a_weak_pulse",   label:"Weak and fast pulse",                         level:"RED"},
+    {id:"a_heavy_bleed",  label:"Heavy / major bleeding",                      level:"RED"},
+    {id:"a_hr_red",       label:"HR < 50 or > 150 bpm",                        level:"RED"},
+  ],
+  "Disability — RED":[
+    {id:"a_convulsion",   label:"Active convulsions",                           level:"RED"},
+    {id:"a_hypoglycemia", label:"Hypoglycaemia (confirmed)",                    level:"RED"},
+    {id:"a_2of3_neuro",   label:"Any 2 of: altered mental status + stiff neck + hypo/fever + headache", level:"RED"},
+  ],
+  "Other — RED":[
+    {id:"a_high_trauma",  label:"High-risk trauma (fall >2× height, penetrating, polytrauma, crush, MVC)", level:"RED"},
+    {id:"a_poison",       label:"Poisoning / dangerous chemical exposure",      level:"RED"},
+    {id:"a_threatened_limb",label:"Threatened limb (pulseless or pale/weak/numb)",level:"RED"},
+    {id:"a_snakebite",    label:"Snake bite",                                  level:"RED"},
+    {id:"a_chest_abd_50", label:"Acute chest or abdominal pain (age > 50)",    level:"RED"},
+    {id:"a_ecg_ischaemia",label:"ECG with acute ischaemia",                    level:"RED"},
+    {id:"a_violent",      label:"Violent or aggressive",                       level:"RED"},
+  ],
+  "Pregnant — RED (any of)":[
+    {id:"a_preg_bleed",   label:"Heavy bleeding (pregnant)",                   level:"RED"},
+    {id:"a_preg_pain",    label:"Severe abdominal pain (pregnant)",             level:"RED"},
+    {id:"a_preg_seizure", label:"Seizures or altered mental status (pregnant)", level:"RED"},
+    {id:"a_preg_headache",label:"Severe headache (pregnant)",                   level:"RED"},
+    {id:"a_preg_visual",  label:"Visual changes (pregnant)",                   level:"RED"},
+    {id:"a_preg_bp",      label:"SBP ≥ 160 or DBP ≥ 110 (pregnant)",           level:"RED"},
+    {id:"a_preg_labour",  label:"Active labour",                               level:"RED"},
+    {id:"a_preg_trauma",  label:"Trauma (pregnant)",                           level:"RED"},
+  ],
+  "Airway & Breathing — YELLOW":[
+    {id:"a_swelling_neck",label:"Swelling/mass of mouth, throat or neck",      level:"YELLOW"},
+    {id:"a_wheeze",       label:"Wheezing (no red criteria)",                  level:"YELLOW"},
+  ],
+  "Circulation — YELLOW":[
+    {id:"a_vomit_all",    label:"Vomits everything or ongoing diarrhoea",      level:"YELLOW"},
+    {id:"a_no_feed",      label:"Unable to feed or drink",                     level:"YELLOW"},
+    {id:"a_pallor",       label:"Severe pallor (no red criteria)",             level:"YELLOW"},
+    {id:"a_ongoing_bleed",label:"Ongoing bleeding (no red criteria)",          level:"YELLOW"},
+    {id:"a_fainting",     label:"Recent fainting",                             level:"YELLOW"},
+  ],
+  "Disability — YELLOW":[
+    {id:"a_alt_mental",   label:"Altered mental status or agitation (no red)", level:"YELLOW"},
+    {id:"a_weakness",     label:"Acute general weakness",                      level:"YELLOW"},
+    {id:"a_focal_neuro",  label:"Acute focal neurologic complaint",             level:"YELLOW"},
+    {id:"a_visual_dist",  label:"Acute visual disturbance",                    level:"YELLOW"},
+    {id:"a_severe_pain",  label:"Severe pain (no red criteria)",               level:"YELLOW"},
+  ],
+  "Other — YELLOW":[
+    {id:"a_rash",         label:"New rash worsening over hours or peeling",    level:"YELLOW"},
+    {id:"a_limb_deform",  label:"Visible acute limb deformity",                level:"YELLOW"},
+    {id:"a_open_frac",    label:"Open fracture",                               level:"YELLOW"},
+    {id:"a_dislocation",  label:"Suspected dislocation",                       level:"YELLOW"},
+    {id:"a_other_trauma", label:"Other trauma / burns (no red criteria)",      level:"YELLOW"},
+    {id:"a_surgical",     label:"Known diagnosis requiring urgent surgery",    level:"YELLOW"},
+    {id:"a_sexual_assault",label:"Sexual assault",                             level:"YELLOW"},
+    {id:"a_testicular",   label:"Acute testicular / scrotal pain or priapism", level:"YELLOW"},
+    {id:"a_urine",        label:"Unable to pass urine",                        level:"YELLOW"},
+    {id:"a_prophylaxis",  label:"Exposure needing time-sensitive prophylaxis (animal bite, needlestick)", level:"YELLOW"},
+    {id:"a_preg_compl",   label:"Pregnancy referred for complications",         level:"YELLOW"},
+  ],
+};
+
+const PED_SYMPTOMS = {
+  "Airway & Breathing — RED":[
+    {id:"p_unresponsive", label:"Unresponsive",                                 level:"RED"},
+    {id:"p_stridor",      label:"Stridor",                                      level:"RED"},
+    {id:"p_resp_distress",label:"Respiratory distress or central cyanosis",     level:"RED"},
+  ],
+  "Circulation — RED":[
+    {id:"p_cap_refill",   label:"Capillary refill > 3 sec",                    level:"RED"},
+    {id:"p_weak_pulse",   label:"Weak and fast pulse",                         level:"RED"},
+    {id:"p_heavy_bleed",  label:"Heavy bleeding",                              level:"RED"},
+    {id:"p_cold_ext",     label:"Cold extremities",                            level:"RED"},
+    {id:"p_2of4_dehyd",   label:"Any 2 of: lethargy, sunken eyes, very slow skin pinch, drinks poorly", level:"RED"},
+  ],
+  "Disability — RED":[
+    {id:"p_convulsion",   label:"Active convulsions",                           level:"RED"},
+    {id:"p_ms_stiffneck", label:"Altered mental status with stiff neck + hypothermia or fever", level:"RED"},
+    {id:"p_hypoglycemia", label:"Hypoglycaemia (if known)",                    level:"RED"},
+  ],
+  "Other — RED (Paediatric)":[
+    {id:"p_infant8d",     label:"Any infant < 8 days old",                     level:"RED"},
+    {id:"p_infant2m_temp",label:"Age < 2 months with temp < 36°C or > 39°C",  level:"RED"},
+    {id:"p_high_trauma",  label:"High-risk trauma",                            level:"RED"},
+    {id:"p_threatened_limb",label:"Threatened limb",                           level:"RED"},
+    {id:"p_testicular",   label:"Acute testicular / scrotal pain or priapism", level:"RED"},
+    {id:"p_snakebite",    label:"Snake bite",                                  level:"RED"},
+    {id:"p_poison",       label:"Poisoning / dangerous chemical exposure",      level:"RED"},
+    {id:"p_preg_adult_red",label:"Pregnant with adult red criteria",           level:"RED"},
+  ],
+  "Airway & Breathing — YELLOW":[
+    {id:"p_swelling_neck",label:"Swelling/mass of mouth, throat or neck",      level:"YELLOW"},
+    {id:"p_wheeze",       label:"Wheezing (no red criteria)",                  level:"YELLOW"},
+  ],
+  "Circulation — YELLOW":[
+    {id:"p_no_feed",      label:"Unable to feed or drink",                     level:"YELLOW"},
+    {id:"p_vomit_all",    label:"Vomits everything",                           level:"YELLOW"},
+    {id:"p_diarrhea",     label:"Ongoing diarrhoea",                           level:"YELLOW"},
+    {id:"p_dehydration",  label:"Dehydration",                                 level:"YELLOW"},
+    {id:"p_pallor",       label:"Severe pallor (no red criteria)",             level:"YELLOW"},
+  ],
+  "Disability — YELLOW":[
+    {id:"p_irritable",    label:"Restless, continuously irritable or lethargic",level:"YELLOW"},
+    {id:"p_severe_pain",  label:"Severe pain (no red criteria)",               level:"YELLOW"},
+  ],
+  "Other — YELLOW (Paediatric)":[
+    {id:"p_infant6m",     label:"Any infant 8 days to 6 months old",           level:"YELLOW"},
+    {id:"p_malnutrition", label:"Malnutrition: severe wasting or oedema of both feet", level:"YELLOW"},
+    {id:"p_trauma_burns", label:"Trauma / burns (no red criteria)",            level:"YELLOW"},
+    {id:"p_sexual_assault",label:"Sexual assault",                             level:"YELLOW"},
+    {id:"p_surgical",     label:"Known diagnosis requiring urgent surgery",    level:"YELLOW"},
+    {id:"p_rash",         label:"New rash worsening over hours or peeling",    level:"YELLOW"},
+    {id:"p_prophylaxis",  label:"Exposure needing time-sensitive prophylaxis (animal bite)", level:"YELLOW"},
+    {id:"p_pregnancy",    label:"Pregnancy (no red criteria)",                 level:"YELLOW"},
+    {id:"p_headache",     label:"Headache (no red criteria)",                  level:"YELLOW"},
+  ],
+};
+
+// ─────────────────────────────────────────────────────────
+// MANUAL SYMPTOM KEYWORD MATCHING
+// Returns list of matched symptom IDs from free text
+// ─────────────────────────────────────────────────────────
+const MANUAL_KEYWORD_MAP = [
+  // RED
+  {keywords:['unresponsive','unconscious','not responding'],ids:['a_unresponsive','p_unresponsive']},
+  {keywords:['stridor'],ids:['a_stridor','p_stridor']},
+  {keywords:['respiratory distress','breathing difficulty','can\'t breathe','cannot breathe','difficulty breathing','shortness of breath'],ids:['a_resp_distress','p_resp_distress']},
+  {keywords:['cyanosis','blue lips','central cyanosis'],ids:['a_resp_distress']},
+  {keywords:['capillary refill','slow refill'],ids:['a_cap_refill']},
+  {keywords:['weak pulse','faint pulse'],ids:['a_weak_pulse']},
+  {keywords:['heavy bleeding','massive bleeding','haemorrhage','hemorrhage'],ids:['a_heavy_bleed','p_heavy_bleed']},
+  {keywords:['convuls','seizure','fitting','epilep'],ids:['a_convulsion','p_convulsion']},
+  {keywords:['hypoglycemi','low blood sugar','low glucose'],ids:['a_hypoglycemia']},
+  {keywords:['snake bite','snakebite'],ids:['a_snakebite','p_snakebite']},
+  {keywords:['poisoning','overdose','ingested','chemical exposure','toxic'],ids:['a_poison','p_poison']},
+  {keywords:['threatened limb','pulseless limb','cold limb'],ids:['a_threatened_limb']},
+  {keywords:['chest pain','cardiac arrest','heart attack'],ids:['a_chest_abd_50']},
+  {keywords:['violent','aggressive','combative'],ids:['a_violent']},
+  {keywords:['active labour','in labour','contractions'],ids:['a_preg_labour']},
+  {keywords:['cold extremities','cold hands','cold feet'],ids:['p_cold_ext']},
+  // YELLOW
+  {keywords:['swelling neck','neck mass','throat swelling','throat mass'],ids:['a_swelling_neck','p_swelling_neck']},
+  {keywords:['wheez'],ids:['a_wheeze','p_wheeze']},
+  {keywords:['vomit','nausea','throwing up'],ids:['a_vomit_all','p_vomit_all']},
+  {keywords:['diarrhoea','diarrhea','loose stool'],ids:['a_vomit_all','p_diarrhea']},
+  {keywords:['unable to eat','unable to drink','not eating','not drinking','refusing feed'],ids:['a_no_feed','p_no_feed']},
+  {keywords:['pale','pallor','anaem','anemi'],ids:['a_pallor','p_pallor']},
+  {keywords:['fainting','fainted','syncope','passed out'],ids:['a_fainting']},
+  {keywords:['altered mental','confused','agitat','disoriented'],ids:['a_alt_mental']},
+  {keywords:['weakness','weak','paralysis','paraly'],ids:['a_weakness']},
+  {keywords:['neurolog','focal deficit','facial droop','arm drift'],ids:['a_focal_neuro']},
+  {keywords:['visual disturbance','blurry vision','vision loss','vision change'],ids:['a_visual_dist']},
+  {keywords:['severe pain','excruciating','10/10 pain'],ids:['a_severe_pain']},
+  {keywords:['rash','skin peeling','urticaria','hives'],ids:['a_rash','p_rash']},
+  {keywords:['fracture','broken bone','open fracture','compound fracture'],ids:['a_open_frac']},
+  {keywords:['dislocation','dislocated'],ids:['a_dislocation']},
+  {keywords:['trauma','injury','accident','fall'],ids:['a_other_trauma','p_trauma_burns']},
+  {keywords:['burn'],ids:['a_other_trauma','p_trauma_burns']},
+  {keywords:['sexual assault','rape','abuse'],ids:['a_sexual_assault','p_sexual_assault']},
+  {keywords:['testicular','scrotal','priapism'],ids:['a_testicular','p_testicular']},
+  {keywords:['unable to urinate','urinary retention','can\'t pass urine'],ids:['a_urine']},
+  {keywords:['animal bite','dog bite','needlestick','needle stick'],ids:['a_prophylaxis','p_prophylaxis']},
+  {keywords:['pregnant','pregnancy','prenatal','antenatal'],ids:['a_preg_compl','p_pregnancy']},
+  {keywords:['dehydrat'],ids:['p_dehydration']},
+  {keywords:['malnutri','wasting','oedema feet','edema feet'],ids:['p_malnutrition']},
+  {keywords:['headache','head pain','migraine'],ids:['p_headache']},
+  {keywords:['fever','high temperature','pyrexia','febrile'],ids:['a_2of3_neuro']},
+  {keywords:['stiff neck','neck stiffness','meningism'],ids:['a_2of3_neuro']},
+];
+
+function parseManualSymptoms(text){
+  const lower = text.toLowerCase();
+  const matched = new Set();
+  MANUAL_KEYWORD_MAP.forEach(entry=>{
+    if(entry.keywords.some(k=>lower.includes(k))){
+      entry.ids.forEach(id=>matched.add(id));
+    }
+  });
+  return [...matched];
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER SYMPTOM CHECKLIST
+// ─────────────────────────────────────────────────────────
+function renderSymptoms(){
+  const age = parseInt(document.getElementById('age').value)||99;
+  const isPed = age < 12;
+  const symptoms = isPed ? PED_SYMPTOMS : ADULT_SYMPTOMS;
+  const container = document.getElementById('symptom-section');
+  container.innerHTML='';
+  for(const [cat,items] of Object.entries(symptoms)){
+    const catDiv = document.createElement('div');
+    catDiv.className='sym-category';
+    const isRed = cat.toLowerCase().includes('red');
+    const lbl = document.createElement('div');
+    lbl.className=`sym-cat-label ${isRed?'lbl-red':'lbl-yellow'}`;
+    lbl.textContent=cat;
+    catDiv.appendChild(lbl);
+    const grid=document.createElement('div');
+    grid.className='sym-grid';
+    items.forEach(item=>{
+      const row=document.createElement('label');
+      row.className=`sym-item ${item.level==='RED'?'red-sym':'yellow-sym'}`;
+      row.innerHTML=`<input type="checkbox" id="${item.id}" data-level="${item.level}" data-label="${item.label}"><span>${item.label}</span>`;
+      grid.appendChild(row);
+    });
+    catDiv.appendChild(grid);
+    container.appendChild(catDiv);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// VITALS CHECK
+// ─────────────────────────────────────────────────────────
+function checkVitals(age,hr,rr,temp,spo2,avpu){
+  const flags=[];
+  if(avpu && avpu!=='A') flags.push({label:`AVPU: ${avpu} (not Alert)`,level:'VITAL'});
+  if(spo2 && spo2<92)   flags.push({label:`SpO₂ ${spo2}% < 92%`,level:'VITAL'});
+  if(temp && (temp<36||temp>39)) flags.push({label:`Temp ${temp}°C (outside 36–39°C range)`,level:'VITAL'});
+  const isPed=age<12;
+  if(isPed){
+    let hrH=999,hrL=0,rrH=999,rrL=0;
+    if(age<1){hrH=180;hrL=90;rrH=50;rrL=25}
+    else if(age<5){hrH=160;hrL=80;rrH=40;rrL=20}
+    else{hrH=140;hrL=70;rrH=30;rrL=10}
+    if(hr&&(hr>hrH||hr<hrL)) flags.push({label:`HR ${hr} bpm (paediatric ref: ${hrL}–${hrH})`,level:'VITAL'});
+    if(rr&&(rr>rrH||rr<rrL)) flags.push({label:`RR ${rr}/min (paediatric ref: ${rrL}–${rrH})`,level:'VITAL'});
+  } else {
+    if(hr&&(hr<60||hr>130)) flags.push({label:`HR ${hr} bpm (ref: 60–130)`,level:'VITAL'});
+    if(rr&&(rr<10||rr>30))  flags.push({label:`RR ${rr}/min (ref: 10–30)`,level:'VITAL'});
+  }
+  return flags;
+}
+
+// ─────────────────────────────────────────────────────────
+// DEPARTMENT RULES
+// ─────────────────────────────────────────────────────────
+const DEPT_RULES=[
+  {ids:['a_preg_bleed','a_preg_pain','a_preg_seizure','a_preg_headache','a_preg_visual','a_preg_bp','a_preg_labour','a_preg_trauma','a_preg_compl','p_preg_adult_red','p_pregnancy'],pregnant:true,
+   dept:'Obstetrics & Gynaecology',icon:'🤰',reason:'Pregnancy-related presentation detected. OB/GYN team required.',tags:['Antenatal','Labour & Delivery','Maternal Emergency'],
+   nav:{steps:['Enter main entrance → turn LEFT at reception','Follow GREEN signs to Block C','Take lift or staircase to 2nd Floor','Proceed to Room 21 — OB/GYN Ward'],room:'Block C · 2nd Floor · Room 21',note:'Inform nursing staff immediately. Labour & Delivery suite is adjacent (Room 22).'}},
+  {ids:['a_chest_abd_50','a_ecg_ischaemia','a_hr_red','a_weak_pulse','a_cap_refill'],
+   dept:'Cardiology / Emergency',icon:'❤️',reason:'Cardiac or haemodynamic red flag signs present. Requires ECG and cardiac monitoring.',tags:['Chest Pain','ECG Required','Haemodynamic Monitoring'],
+   nav:{steps:['Enter EMERGENCY entrance (north side)','Turn RIGHT — follow RED stripe to Emergency Wing','Cardiology Bay → Ground Floor; CCU: Block B, 1st Floor'],room:'Emergency Wing (Ground) · CCU: Block B · 1st Floor · Room 12',note:'ECG available at nursing station. Alert on-call cardiologist via intercom.'}},
+  {ids:['a_convulsion','a_2of3_neuro','a_focal_neuro','a_alt_mental','a_hypoglycemia','p_convulsion','p_ms_stiffneck','p_hypoglycemia'],
+   dept:'Neurology / Emergency',icon:'🧠',reason:'Neurological signs detected — altered consciousness, convulsions or focal deficits.',tags:['Altered Consciousness','Seizure','Neurological Deficit'],
+   nav:{steps:['Enter main entrance → straight ahead past reception','Follow BLUE signs to Block D','Take lift to 2nd Floor','Neurology Emergency: Room 07; OPD: Room 08'],room:'Block D · 2nd Floor · Room 07',note:'If patient is actively seizing, do NOT use lift. Alert emergency team at Ground Floor desk.'}},
+  {ids:['a_stridor','a_resp_distress','a_wheeze','a_swelling_neck','p_stridor','p_resp_distress','p_wheeze','p_swelling_neck'],
+   dept:'Pulmonology / Respiratory Emergency',icon:'🫁',reason:'Airway or respiratory compromise. Urgent airway management needed.',tags:['Airway Management','Oxygen Therapy','Respiratory Distress'],
+   nav:{steps:['Enter EMERGENCY entrance (north side)','Follow RED floor stripe to Resuscitation Area','Respiratory Bay: Room E-03 — Ground Floor, Emergency Wing'],room:'Emergency Wing · Ground Floor · Room E-03',note:'Notify charge nurse immediately. Crash trolley outside Room E-03.'}},
+  {ids:['a_high_trauma','a_threatened_limb','a_open_frac','a_limb_deform','a_dislocation','a_other_trauma','a_surgical','p_high_trauma','p_threatened_limb','p_trauma_burns'],
+   dept:'Trauma & Surgery / Emergency',icon:'🩹',reason:'Trauma, orthopaedic injury or surgical emergency. Surgical assessment required.',tags:['Trauma Bay','Orthopaedics','X-Ray / Imaging'],
+   nav:{steps:['Enter EMERGENCY entrance (north side)','Turn LEFT — follow ORANGE trauma signs','Trauma Bay: Room T-01, Ground Floor','X-Ray: Room T-02 (adjacent)','Surgical OPD (planned): Block A · 1st Floor · Room 09'],room:'Emergency Wing · Ground Floor · Room T-01',note:'Immobilise suspected fractures before moving. Spine board at triage desk.'}},
+  {ids:['a_poison','a_snakebite','a_prophylaxis','p_poison','p_snakebite','p_prophylaxis'],
+   dept:'Toxicology / Emergency',icon:'☣️',reason:'Poisoning, envenomation or high-risk exposure. Time-sensitive protocol required.',tags:['Antidote Protocol','Decontamination','Post-Exposure Prophylaxis'],
+   nav:{steps:['Enter EMERGENCY entrance (north side)','Alert triage nurse immediately about exposure type','Toxicology isolation bay: Room E-05, Ground Floor'],room:'Emergency Wing · Ground Floor · Room E-05',note:'State substance/animal type to nurse on arrival. Antivenom refrigerator at E-05 nurse station.'}},
+  {ids:['a_vomit_all','a_no_feed','p_vomit_all','p_no_feed','p_diarrhea','p_dehydration'],
+   dept:'Gastroenterology / General Medicine',icon:'🫀',reason:'GI symptoms — vomiting, inability to feed, or diarrhoea. Fluid assessment needed.',tags:['GI Assessment','IV Fluids','Electrolytes'],
+   nav:{steps:['Enter main entrance → turn RIGHT at reception','Follow signs to Block A, Ground Floor','Gastroenterology OPD: Room 06 — opposite the pharmacy'],room:'Block A · Ground Floor · Room 06',note:'IV fluid initiation available in Room 06 treatment bay. Lab tests: Room 04 (adjacent).'}},
+  {ids:['a_visual_dist'],
+   dept:'Ophthalmology / Emergency',icon:'👁️',reason:'Acute visual disturbance. Urgent ophthalmic exam needed.',tags:['Visual Acuity','Fundoscopy','Urgent Review'],
+   nav:{steps:['Enter main entrance → proceed straight past reception','Turn RIGHT at the pharmacy corridor','Eye Clinic: Block E · Ground Floor · Room 03'],room:'Block E · Ground Floor · Room 03',note:'Dim lighting in waiting area. Escort patient — do not leave unattended if vision is severely impaired.'}},
+  {ids:['a_urine','a_testicular','p_testicular'],
+   dept:'Urology',icon:'🔬',reason:'Urological complaint — urinary retention or acute testicular pain.',tags:['Urinary Retention','Scrotal Ultrasound'],
+   nav:{steps:['Enter main entrance → turn RIGHT at reception','Follow signs to Block B','Take lift to 1st Floor','Urology OPD: Room 14 — end of corridor left'],room:'Block B · 1st Floor · Room 14',note:'Ultrasound suite: Room 15 (adjacent). Bladder scanner at nursing station.'}},
+  {ids:['a_heavy_bleed','a_ongoing_bleed','p_heavy_bleed'],
+   dept:'Emergency / Haematology',icon:'🩸',reason:'Active or significant bleeding detected. Haemostasis assessment needed.',tags:['Haemostasis','Blood Work','IV Access'],
+   nav:{steps:['Enter EMERGENCY entrance (north side)','Alert triage nurse to active bleeding IMMEDIATELY','Emergency Room E-01 — Ground Floor, left of main emergency desk'],room:'Emergency Wing · Ground Floor · Room E-01',note:'Apply direct pressure to wound. Blood bank: Basement Level via internal lift near E-01.'}},
+  {ids:['p_infant8d','p_infant2m_temp','p_infant6m','p_malnutrition','p_irritable'],
+   dept:'Paediatrics / Neonatal Unit',icon:'👶',reason:'Paediatric/neonatal-specific criteria. Dedicated paediatric team required.',tags:['Neonatal','Paediatric Emergency','Growth Assessment'],
+   nav:{steps:['Enter main entrance → turn LEFT at reception','Follow YELLOW footprints on floor to Paediatric Wing','Paediatric Emergency: Block F · Ground Floor · Room 02'],room:'Block F · Ground Floor · Room 02',note:'Parents/guardians may accompany child. Hand hygiene mandatory at entrance.'}},
+  {ids:['a_rash','p_rash'],
+   dept:'Dermatology / General Medicine',icon:'🧬',reason:'Rapidly evolving rash or skin changes. Rule out serious systemic cause.',tags:['Rash Assessment','Skin Culture'],
+   nav:{steps:['Enter main entrance → proceed straight','Turn RIGHT at pharmacy','Block A · 1st Floor (staircase on right)','Dermatology OPD: Room 18'],room:'Block A · 1st Floor · Room 18',note:'If rash is suspected infectious, inform nurse before entering. Isolation room available.'}},
+  {ids:['a_violent'],
+   dept:'Psychiatry / Emergency',icon:'🧩',reason:'Violent or aggressive presentation. De-escalation and psychiatric assessment needed.',tags:['De-escalation','Psychiatric Assessment','Security Alert'],
+   nav:{steps:['Alert security (Ext. 999) BEFORE approaching patient','Psychiatric Emergency: Block G · Ground Floor · Room 01','Use west entrance for patient safety'],room:'Block G · Ground Floor · Room 01 (West Entrance)',note:'Security escort required. Psychiatric team on-call 24 hours. Document all behaviours.'}},
+  {ids:['a_sexual_assault','p_sexual_assault'],
+   dept:'Sexual Assault Response Unit',icon:'🛡️',reason:'Sexual assault reported. Refer to SARU for confidential examination and support.',tags:['Confidential','Forensic Exam','Psychosocial Support'],
+   nav:{steps:['Use PRIVATE entrance on south side of hospital','SARU: Block H · Ground Floor · Room 01','Reception desk staffed 24 hours — buzz intercom after hours'],room:'Block H · Ground Floor · Room 01 (Private South Entrance)',note:'Do not discuss case in open areas. Escort patient directly. Female staff available on request.'}},
+  {ids:[],fallback:true,
+   dept:'General Medicine / OPD',icon:'🩺',reason:'No specialist criteria matched. General Medicine for full clinical assessment.',tags:['General Assessment','History & Examination','Investigation'],
+   nav:{steps:['Enter main entrance → straight ahead past reception','Block A · Ground Floor · Room 05 — General Medicine OPD','Collect token number from OPD desk near entrance'],room:'Block A · Ground Floor · Room 05',note:'OPD hours: 8:00 AM – 4:00 PM. After hours: report to Emergency desk (north entrance).'}},
+];
+
+function suggestDepartment(checkedIds, pregnant){
+
+  // 1. Pregnancy override
+  if(pregnant === 'yes'){
+    return DEPT_RULES[0];
+  }
+
+  // 2. Check all non-fallback rules
+  for(const rule of DEPT_RULES){
+    if(!rule.fallback && rule.ids.some(id => checkedIds.includes(id))){
+      return rule;
+    }
+  }
+
+  // 3. Fallback
+  return DEPT_RULES.find(rule => rule.fallback);
+}
+
+// ─────────────────────────────────────────────────────────
+// PRIORITY CONFIG
+// ─────────────────────────────────────────────────────────
+const PRIORITY_CONFIG={
+  RED:{label:"RED — Emergency",sublabel:"Immediate life-threatening condition. Move to resuscitation area NOW.",time:"Within 10 minutes",action:"Move to Resuscitation / RED Area",area:"High Acuity Resuscitation Area",nav:"Escort patient IMMEDIATELY to the Resuscitation Area. Alert the on-duty senior clinician and nursing team. Initiate ABCDE assessment without delay. Do not leave patient unattended.",protocol:"WHO IITT — RED Criteria"},
+  YELLOW:{label:"YELLOW — Urgent",sublabel:"Urgent condition. Prompt clinical attention required.",time:"Within 2 hours",action:"Move to Clinical Treatment / YELLOW Area",area:"Clinical Treatment Area",nav:"Guide patient to YELLOW (Urgent) Treatment Area. Assign a nurse for monitoring. Initiate first-line management. Up-triage to RED if condition worsens or high-risk vitals detected.",protocol:"WHO IITT — YELLOW Criteria"},
+  GREEN:{label:"GREEN — Routine / Non-Urgent",sublabel:"No immediate red or yellow criteria. Routine OPD assessment.",time:"Within 4 hours",action:"Move to Green Area or OPD Waiting Area",area:"Low Acuity / OPD Waiting Area",nav:"Direct patient to the GREEN (Routine) waiting area or OPD queue. Reassess if condition changes. Re-triage immediately if high-risk vital signs develop.",protocol:"WHO IITT — No Red or Yellow Criteria Met"},
+};
+
+// ─────────────────────────────────────────────────────────
+// BARCODE GENERATOR
+// ─────────────────────────────────────────────────────────
+function generateBarcode(container, numEl, code){
+  container.innerHTML='';
+  const widths=[2,1,3,1,2,2,1,3,2,1,1,3,2,1,2,1,3,2,1,2,3,1,1,2,1,3,2,1,2,1,3,1,2,2,1,3];
+  widths.forEach((w,i)=>{
+    const bar=document.createElement('span');
+    bar.style.cssText=`width:${w+1}px;height:${18+Math.random()*8}px;background:${i%2===0?'#475569':'transparent'};border-radius:1px`;
+    container.appendChild(bar);
+  });
+  numEl.textContent=code;
+}
+
+// ─────────────────────────────────────────────────────────
+// LOADING ANIMATION
+// ─────────────────────────────────────────────────────────
+function startTriage(){
+  // Validate
+  const name=document.getElementById('name').value.trim();
+  const age=parseInt(document.getElementById('age').value);
+  const gender=document.getElementById('gender').value;
+  if(!name||!age||!gender){alert('Please fill in: Patient Name, Age and Gender.');return;}
+
+  // Show loader
+  const overlay=document.getElementById('loading');
+  overlay.classList.add('show');
+  const steps=['ls1','ls2','ls3','ls4'];
+  steps.forEach(id=>{document.getElementById(id).className='loading-step'});
+
+  let i=0;
+  const tick=setInterval(()=>{
+    if(i>0) document.getElementById(steps[i-1]).className='loading-step done';
+    if(i<steps.length){
+      document.getElementById(steps[i]).className='loading-step active';
+      i++;
+    } else {
+      clearInterval(tick);
+      setTimeout(()=>{
+        overlay.classList.remove('show');
+        steps.forEach(id=>{document.getElementById(id).className='loading-step'});
+        runTriage();
+      },400);
+    }
+  },380);
+}
+
+// ─────────────────────────────────────────────────────────
+// MAIN TRIAGE LOGIC
+// ─────────────────────────────────────────────────────────
+function getNextToken(priority){
+  let counters = JSON.parse(localStorage.getItem('tokenCounters') || '{}');
+
+  if(!counters[priority]){
+    counters[priority] = 1;
+  } else {
+    counters[priority]++;
+  }
+
+  localStorage.setItem('tokenCounters', JSON.stringify(counters));
+
+  return String(counters[priority]).padStart(3, '0');
+}
+// 🚨 Only these can trigger RED from text alone
+const CRITICAL_MANUAL_IDS = [
+  'a_unresponsive',
+  'a_convulsion',
+  'a_heavy_bleed',
+  'a_resp_distress',
+  'a_stridor',
+  'a_snakebite',
+  'a_poison',
+  'p_unresponsive',
+  'p_convulsion',
+  'p_heavy_bleed',
+  'p_resp_distress',
+  'p_stridor',
+  'p_snakebite',
+  'p_poison'
+];
+function runTriage(){
+  const name     = document.getElementById('name').value.trim();
+  const age      = parseInt(document.getElementById('age').value);
+  const gender   = document.getElementById('gender').value;
+  const pregnant = document.getElementById('pregnant').value;
+  const temp     = parseFloat(document.getElementById('temp').value)||null;
+  const hr       = parseInt(document.getElementById('hr').value)||null;
+  const rr       = parseInt(document.getElementById('rr').value)||null;
+  const spo2     = parseInt(document.getElementById('spo2').value)||null;
+  const avpu     = document.getElementById('avpu').value;
+  const sbp      = parseInt(document.getElementById('sbp').value)||null;
+
+  // ── Collect from BOTH sources ──────────────────────────
+
+  // 1. Checklist
+  const checklistIds = [...document.querySelectorAll('#symptom-section input[type=checkbox]:checked')].map(c => c.id);
+
+  // 2. Manual free-text
+  const manualText = document.getElementById('manual-symptoms').value;
+  const manualIds  = parseManualSymptoms(manualText);
+
+  // 3. Build unified symMap
+  const allSymDefs = [...Object.values(ADULT_SYMPTOMS),...Object.values(PED_SYMPTOMS)].flat();
+  const symMap = {}; allSymDefs.forEach(s=>{ symMap[s.id]=s; });
+
+  // 4. Merge (dedup by id)
+ // Split manual inputs
+const manualCritical = manualIds.filter(id => CRITICAL_MANUAL_IDS.includes(id));
+const manualNonCritical = manualIds.filter(id => !CRITICAL_MANUAL_IDS.includes(id));
+
+// Merge safely
+const checkedIds = [...new Set([
+  ...checklistIds,
+  ...manualIds
+])];
+
+  // 5. Tag triggers with source for display
+  let redTriggers = [];
+  const yellowTriggers = [];
+  const seenLabels     = new Set();
+
+  checklistIds.forEach(id => {
+  const s = symMap[id];
+  if(!s || seenLabels.has(s.label)) return;
+
+  seenLabels.add(s.label);
+
+  (s.level==='RED' ? redTriggers : yellowTriggers).push({
+    id: id,
+    label: s.label,           // ❌ remove ✦ text
+    level: s.level,
+    source: 'checklist'       // ✅ THIS IS THE FIX
+  });
+});
+ manualIds.forEach(id => {
+  const s = symMap[id];
+  if(!s || seenLabels.has(s.label)) return;
+
+  const isCritical = CRITICAL_MANUAL_IDS.includes(id);
+
+  // ❌ BLOCK non-critical RED from text
+  if(s.level === 'RED' && !isCritical){
+    return;
+  }
+
+  seenLabels.add(s.label);
+
+(s.level==='RED' ? redTriggers : yellowTriggers).push({
+  id: id,   // ✅ REQUIRED
+  label: s.label,
+  level: s.level,
+  source:'manual'
+});
+});
+// ✅ FINAL SAFETY FILTER (ID-based, not text-based)
+redTriggers = redTriggers.filter(t =>
+  t.source !== 'manual' || CRITICAL_MANUAL_IDS.includes(t.id)
+);
+
+  const vitalFlags=checkVitals(age,hr,rr,temp,spo2,avpu);
+
+  let extraRed=[];
+  if(age>=12&&hr&&(hr<50||hr>150)) extraRed.push({label:`HR ${hr} bpm — extreme RED threshold (<50 or >150)`,level:'RED'});
+  if(pregnant==='yes'&&sbp&&sbp>=160) extraRed.push({label:`SBP ${sbp} mmHg ≥ 160 (pregnant RED criteria)`,level:'RED'});
+// 🧠 If ONLY text was used → don't allow RED unless critical
+const hasChecklist = checklistIds.length > 0;
+if(!hasChecklist && redTriggers.length > 0){
+  // Only manual input present
+  redTriggers = redTriggers.filter(t =>
+    CRITICAL_MANUAL_IDS.includes(t.id)
+  );
+}
+
+  let priority;
+
+// 🚨 HARD SAFETY RULE (never remove)
+if(redTriggers.length > 0){
+  priority = 'RED';
+}
+else if(extraRed.length > 0){
+  priority = 'RED';
+}
+else{
+  let score = 0;
+
+  score += yellowTriggers.length * 2;
+  score += vitalFlags.length * 2;
+
+  if(score >= 2){
+    priority = 'YELLOW';
+  }
+  else{
+    priority = 'GREEN';
+  }
+}
+
+  const allTriggers=[...redTriggers,...extraRed,...yellowTriggers,...vitalFlags];
+
+  // Department
+  const deptRule=suggestDepartment(checkedIds,pregnant);
+  const nav=deptRule.nav;
+  const cfg=PRIORITY_CONFIG[priority];
+  
+  // ── Save Patient ──
+
+let patients = JSON.parse(localStorage.getItem('patients') || "[]");
+
+  // ── AI Explanation ──
+let explanation = "";
+
+if(priority === 'RED'){
+  explanation = "Patient classified as EMERGENCY because life-threatening criteria or critical vital abnormalities were detected. Immediate intervention is required.";
+}
+else if(priority === 'YELLOW'){
+  explanation = "Patient classified as URGENT due to concerning symptoms or abnormal vital signs. Early medical evaluation is recommended.";
+}
+else{
+  explanation = "No emergency or urgent criteria detected. Patient appears stable and can be managed in routine OPD setting.";
+}
+
+// Add re-triage warning
+if(priority !== 'RED'){
+  explanation += " Patient should be re-assessed if condition worsens.";
+}
+
+// Add confidence feel
+let confidence = priority === 'RED' ? "High" : priority === 'YELLOW' ? "Moderate" : "Basic";
+explanation += " (Confidence: " + confidence + ")";
+
+document.getElementById('out-explanation').textContent = explanation;
+
+  // Timestamps & token
+  const now=new Date();
+  const timeStr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const dateStr=now.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'});
+ // ── Token System (separate per priority) ──
+
+let token = priority[0] + getNextToken(priority);
+
+const id = Date.now(); // ✅ unique ID
+
+patients.push({
+  id,
+  name,
+  age,
+  gender,
+  priority,
+  token,
+  department: deptRule.dept,
+  time: new Date().toLocaleString()
+});
+localStorage.setItem('patients', JSON.stringify(patients));
+loadRecords();
+
+// optional formatting
+  const barcodeCode=`T${token}-${now.getHours()}${now.getMinutes()}-${age}`;
+  const initials=name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const pedNote=age<12?' · Paediatric Protocol':'· Adult Protocol';
+
+  // ── Populate LEFT output ──
+  document.getElementById('out-initials').textContent=initials;
+  document.getElementById('out-name').textContent=name;
+  document.getElementById('out-meta').textContent=`${age} yr · ${gender}${pregnant==='yes'?' · Pregnant':''} ${pedNote}`;
+  document.getElementById('out-ts').textContent=`${timeStr}\n${dateStr}`;
+
+  const bar=document.getElementById('priority-bar');
+  bar.className=`priority-bar ${priority}`;
+  document.getElementById('p-label').textContent=cfg.label;
+  document.getElementById('p-sublabel').textContent=cfg.sublabel;
+  document.getElementById('p-time').textContent=cfg.time;
+
+  document.getElementById('out-action').textContent=cfg.action;
+  document.getElementById('out-target').textContent=cfg.time;
+  document.getElementById('out-protocol').textContent=cfg.protocol+(age<12?' (Paediatric)':'');
+  document.getElementById('out-area').textContent=cfg.area;
+  document.getElementById('out-nav').textContent=cfg.nav;
+
+  // Dept box
+  document.getElementById('dept-icon').textContent=deptRule.icon;
+  document.getElementById('dept-name').textContent=deptRule.dept;
+  document.getElementById('dept-reason').textContent=deptRule.reason;
+  document.getElementById('dept-tags').innerHTML=deptRule.tags.map(t=>`<span class="dept-tag">${t}</span>`).join('');
+  const deptBox=document.getElementById('dept-box');
+  deptBox.style.borderColor=priority==='RED'?'var(--red-border)':priority==='YELLOW'?'var(--yellow-border)':'var(--green-border)';
+  deptBox.style.background=priority==='RED'?'var(--red-bg)':priority==='YELLOW'?'var(--yellow-bg)':'var(--green-bg)';
+
+  // Dir box
+  document.getElementById('dir-room').textContent=nav.room;
+  document.getElementById('dir-steps').innerHTML=nav.steps.map((s,i)=>`<div class="dir-step"><div class="dir-step-num">${i+1}</div><span>${s}</span></div>`).join('');
+  document.getElementById('dir-note').textContent=nav.note;
+
+  // Triggers display
+  const tc=document.getElementById('out-triggers');
+  if(allTriggers.length===0){
+    tc.innerHTML='<span style="font-size:12.5px;color:var(--muted)">No specific criteria triggered. Assigned GREEN by default.</span>';
+  } else {
+    const hasManual = allTriggers.some(t=>t.source==='manual');
+    tc.innerHTML = (hasManual ? '<div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:500">✦ = detected from free-text description</div>' : '')
+  + allTriggers.map(t=>`<span class="trigger-tag ${t.level}">
+${t.label}${t.source==='manual'?' ✦':''}${t.level==='VITAL'?' (vital)':''}
+</span>`).join('');
+  }
+
+  // ── Populate CHIT ──
+  document.getElementById('chit-name').textContent=name;
+  document.getElementById('chit-age-gender').textContent=`${age} years · ${gender}${pregnant==='yes'?' · Pregnant':''}`;
+  document.getElementById('chit-token').textContent=token;
+  document.getElementById('chit-ts').innerHTML=`${timeStr}<br>${dateStr}<br>OPD TRIAGE`;
+  document.getElementById('chit-dept').textContent=deptRule.dept;
+  document.getElementById('chit-room').textContent=nav.room;
+  document.getElementById('chit-note').textContent=nav.note;
+
+  // Chit direction steps
+  document.getElementById('chit-dir-steps').innerHTML=nav.steps
+    .map((s,i)=>`<div class="chit-dir-item"><span class="chit-dir-n">${i+1}.</span><span>${s}</span></div>`).join('');
+
+  // Chit priority band
+  const band=document.getElementById('chit-band');
+  band.className=`chit-band ${priority}`;
+  document.getElementById('chit-band-label').textContent=cfg.label;
+  document.getElementById('chit-band-wait').textContent=cfg.time;
+
+  // Barcode
+  generateBarcode(document.getElementById('chit-bars'),document.getElementById('chit-barcode-num'),barcodeCode);
+
+  // Show output
+  document.getElementById('form-card').style.display='none';
+  const out=document.getElementById('output');
+  out.style.display='block';
+  out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ─────────────────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────────────────
+function resetForm(){
+  document.getElementById('output').style.display='none';
+  document.getElementById('form-card').style.display='block';
+  document.querySelectorAll('input[type=number],input[type=text]').forEach(el=>el.value='');
+  document.getElementById('gender').selectedIndex = 0;
+  document.getElementById('pregnant').value='no';
+  document.getElementById('avpu').value='A';
+  document.getElementById('manual-symptoms').value='';
+  document.getElementById('manual-detected').style.display='none';
+  document.getElementById('manual-detected-tags').innerHTML='';
+  document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+document.getElementById('age').addEventListener('change',renderSymptoms);
+document.getElementById('age').addEventListener('blur',renderSymptoms);
+function loadRecords(){
+  let patients = JSON.parse(localStorage.getItem('patients') || "[]");
+
+  const red = patients.filter(p => p.priority === 'RED');
+  const yellow = patients.filter(p => p.priority === 'YELLOW');
+  const green = patients.filter(p => p.priority === 'GREEN');
+
+  // Counters
+  document.getElementById('count-red').textContent = red.length;
+  document.getElementById('count-yellow').textContent = yellow.length;
+  document.getElementById('count-green').textContent = green.length;
+  document.getElementById('count-total').textContent = patients.length;
+
+  // Render function
+function renderList(list){
+  if(list.length === 0){
+    return `<div class="queue-empty">No patients</div>`;
+  }
+
+  return list.map((p, index) => `
+    <div class="patient-row-q">
+      <div class="q-token">${p.token}</div>
+
+      <div class="q-info">
+        <div class="q-name">${p.name}</div>
+        <div class="q-meta">${p.age} yrs · ${p.gender}</div>
+      </div>
+
+      <div class="q-dept">${p.department}</div>
+      <div class="q-time">${p.time}</div>
+
+      <button class="q-btn-del" onclick="deletePatient(${p.id})">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 6h18M8 6v-2h8v2M6 6l1 14h10l1-14"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+
+  document.getElementById('queue-red').innerHTML = renderList(red);
+  document.getElementById('queue-yellow').innerHTML = renderList(yellow);
+  document.getElementById('queue-green').innerHTML = renderList(green);
+}
+// Auto-scroll newest patient in each queue
+setTimeout(() => {
+  const containers = [
+    document.getElementById('queue-red'),
+    document.getElementById('queue-yellow'),
+    document.getElementById('queue-green')
+  ];
+
+  containers.forEach(container => {
+    const rows = container.querySelectorAll('.patient-row-q');
+    if(rows.length > 0){
+      rows[rows.length - 1].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    }
+  });
+}, 100);
+function clearAllRecords(){
+  if(confirm("Are you sure you want to delete ALL records?")){
+    localStorage.removeItem('patients');
+    loadRecords();
+  }
+}
+function deletePatient(id){
+  let patients = JSON.parse(localStorage.getItem('patients') || "[]");
+
+  patients = patients.filter(p => p.id !== id);
+
+  localStorage.setItem('patients', JSON.stringify(patients));
+
+  loadRecords();
+}
+const toggle = document.getElementById('theme-toggle');
+
+// Load saved theme
+if(localStorage.getItem('theme') === 'dark'){
+  document.body.classList.add('dark');
+  toggle.textContent = '☀️';
+}
+
+// Toggle
+toggle.onclick = () => {
+  document.body.classList.toggle('dark');
+
+  if(document.body.classList.contains('dark')){
+    localStorage.setItem('theme','dark');
+    toggle.textContent = '☀️';
+  } else {
+    localStorage.setItem('theme','light');
+    toggle.textContent = '🌙';
+  }
+};
+renderSymptoms();
+window.addEventListener('load', loadRecords);
+</script>
+</body>
+</html>
